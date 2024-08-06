@@ -1,0 +1,62 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum Role{
+  ADMIN
+  OWNER
+}
+enum Status{
+  FREE
+  RENTED
+}
+enum userStatus{
+  VERIFIED
+  NOTVERIFIED
+}
+enum bookStatus{
+  VERIFIED
+  NOTVERIFIED
+}
+model User{
+ id   Int                   @id @default(autoincrement())
+ name String
+ email String
+ password String
+ location String
+ phoneNumber String
+ role Role @default(OWNER)
+ wallet Wallet[]
+ books Book[] 
+ userStatus userStatus @default(NOTVERIFIED)
+}
+model Book{
+  id   Int                   @id @default(autoincrement())
+  name String
+  author String
+  status Status @default(FREE)
+  owner User @relation(fields: [ownerId],references: [id],onDelete: Cascade)
+  ownerId Int
+  bookStatus bookStatus @default(NOTVERIFIED)
+  price String
+  count Int
+  category Category @relation(fields: [categoryId],references: [id],onDelete: Cascade)
+  categoryId Int
+}
+model Wallet {
+  id        Int       @id @default(autoincrement())
+  user      User      @relation(fields: [userId],references: [id],onDelete: Cascade)
+  userId    Int     
+  balance   Int   
+  customDate DateTime? @default(now())
+}
+model Category{
+  id   Int   @id @default(autoincrement())
+  name String
+  books Book[]
+}
