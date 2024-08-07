@@ -26,10 +26,11 @@ enum bookStatus{
 model User{
  id   Int                   @id @default(autoincrement())
  name String
- email String
+ email String @unique
  password String
  location String
  phoneNumber String
+ uploadNumber Int @default(0)
  role Role @default(OWNER)
  wallet Wallet[]
  books Book[] 
@@ -43,7 +44,7 @@ model Book{
   owner User @relation(fields: [ownerId],references: [id],onDelete: Cascade)
   ownerId Int
   bookStatus bookStatus @default(NOTVERIFIED)
-  price String
+  price Int
   count Int
   category Category @relation(fields: [categoryId],references: [id],onDelete: Cascade)
   categoryId Int
@@ -57,6 +58,6 @@ model Wallet {
 }
 model Category{
   id   Int   @id @default(autoincrement())
-  name String
+  name String @unique
   books Book[]
 }

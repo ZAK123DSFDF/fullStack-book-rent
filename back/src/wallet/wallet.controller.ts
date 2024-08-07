@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   ForbiddenException,
   Get,
@@ -33,7 +34,10 @@ export class WalletController {
       if (role !== 'ADMIN') {
         throw new ForbiddenException('You are not an admin');
       }
-      const balance = this.walletService.getTotalOrMonthlyBalance(month, year);
+      const balance = await this.walletService.getTotalOrMonthlyBalance(
+        month,
+        year,
+      );
       res.status(200).json(balance);
     } catch (error) {
       console.log(error);
@@ -45,10 +49,10 @@ export class WalletController {
   async getBalanceByRange(
     @Request() req,
     @Response() res,
-    @Query('startMonth') startMonth: number,
-    @Query('startYear') startYear: number,
-    @Query('endMonth') endMonth: number,
-    @Query('endYear') endYear: number,
+    @Query('startMonth') startMonth?: number,
+    @Query('startYear') startYear?: number,
+    @Query('endMonth') endMonth?: number,
+    @Query('endYear') endYear?: number,
   ) {
     try {
       const token = req.cookies['token'];
@@ -57,22 +61,35 @@ export class WalletController {
       if (role !== 'ADMIN') {
         throw new ForbiddenException('You are not an admin');
       }
+      const currentDate = new Date();
+      const defaultStartYear = 1900;
+      const defaultStartMonth = 1;
+      const defaultEndYear = currentDate.getFullYear();
+      const defaultEndMonth = currentDate.getMonth() + 1;
+
+      const validStartMonth =
+        startMonth && startMonth >= 1 && startMonth <= 12
+          ? startMonth
+          : defaultStartMonth;
+      const validStartYear =
+        startYear && startYear >= 1900 ? startYear : defaultStartYear;
+      const validEndMonth =
+        endMonth && endMonth >= 1 && endMonth <= 12
+          ? endMonth
+          : defaultEndMonth;
+      const validEndYear =
+        endYear && endYear >= 1900 ? endYear : defaultEndYear;
       if (
-        startMonth < 1 ||
-        startMonth > 12 ||
-        endMonth < 1 ||
-        endMonth > 12 ||
-        startYear < 1900 ||
-        endYear < 1900 ||
-        new Date(startYear, startMonth - 1) > new Date(endYear, endMonth - 1)
+        new Date(validStartYear, validStartMonth - 1) >
+        new Date(validEndYear, validEndMonth - 1)
       ) {
-        throw new NotFoundException('invalid date');
+        throw new BadRequestException('Invalid date range');
       }
       const totalBalance = await this.walletService.getBalanceByRange(
-        startMonth,
-        startYear,
-        endMonth,
-        endYear,
+        validStartMonth,
+        validStartYear,
+        validEndMonth,
+        validEndYear,
       );
       res.status(200).json(totalBalance);
     } catch (error) {
@@ -92,7 +109,7 @@ export class WalletController {
       const token = req.cookies['token'];
       const decoded = this.jwt.decode(token);
       const userId = decoded.user;
-      const balance = this.walletService.getUserTotalOrMonthlyBalance(
+      const balance = await this.walletService.getUserTotalOrMonthlyBalance(
         userId,
         month,
         year,
@@ -108,32 +125,46 @@ export class WalletController {
   async getUserBalanceByRange(
     @Request() req,
     @Response() res,
-    @Query('startMonth') startMonth: number,
-    @Query('startYear') startYear: number,
-    @Query('endMonth') endMonth: number,
-    @Query('endYear') endYear: number,
+    @Query('startMonth') startMonth?: number,
+    @Query('startYear') startYear?: number,
+    @Query('endMonth') endMonth?: number,
+    @Query('endYear') endYear?: number,
   ) {
     try {
       const token = req.cookies['token'];
       const decoded = this.jwt.decode(token);
       const userId = decoded.user;
+      const currentDate = new Date();
+      const defaultStartYear = 1900;
+      const defaultStartMonth = 1;
+      const defaultEndYear = currentDate.getFullYear();
+      const defaultEndMonth = currentDate.getMonth() + 1;
+
+      const validStartMonth =
+        startMonth && startMonth >= 1 && startMonth <= 12
+          ? startMonth
+          : defaultStartMonth;
+      const validStartYear =
+        startYear && startYear >= 1900 ? startYear : defaultStartYear;
+      const validEndMonth =
+        endMonth && endMonth >= 1 && endMonth <= 12
+          ? endMonth
+          : defaultEndMonth;
+      const validEndYear =
+        endYear && endYear >= 1900 ? endYear : defaultEndYear;
       if (
-        startMonth < 1 ||
-        startMonth > 12 ||
-        endMonth < 1 ||
-        endMonth > 12 ||
-        startYear < 1900 ||
-        endYear < 1900 ||
-        new Date(startYear, startMonth - 1) > new Date(endYear, endMonth - 1)
+        new Date(validStartYear, validStartMonth - 1) >
+        new Date(validEndYear, validEndMonth - 1)
       ) {
-        throw new NotFoundException('invalid date');
+        throw new BadRequestException('Invalid date range');
       }
+
       const totalBalance = await this.walletService.getUserBalanceByRange(
         userId,
-        startMonth,
-        startYear,
-        endMonth,
-        endYear,
+        validStartMonth,
+        validStartYear,
+        validEndMonth,
+        validEndYear,
       );
       res.status(200).json(totalBalance);
     } catch (error) {

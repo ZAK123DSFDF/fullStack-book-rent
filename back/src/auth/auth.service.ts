@@ -121,6 +121,7 @@ export class AuthService {
       if (userStatus) {
         filter.userStatus = userStatus;
       }
+      filter.role = { not: 'ADMIN' };
       const users = await this.prisma.user.findMany({ where: filter });
       return users;
     } catch (error) {

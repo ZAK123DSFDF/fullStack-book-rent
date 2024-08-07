@@ -67,19 +67,18 @@ export class WalletService {
     }
   }
   async getUserTotalOrMonthlyBalance(
-    userId: any,
+    userId: number,
     month?: number,
     year?: number,
-  ) {
+  ): Promise<number> {
     try {
       let wallets;
-
       if (month !== undefined && year !== undefined) {
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 1);
         wallets = await this.prisma.wallet.findMany({
           where: {
-            userId,
+            userId: userId,
             customDate: {
               gte: startDate,
               lt: endDate,
@@ -87,13 +86,17 @@ export class WalletService {
           },
         });
       } else {
-        wallets = await this.prisma.wallet.findMany({ where: userId });
+        wallets = await this.prisma.wallet.findMany({
+          where: {
+            userId: userId,
+          },
+        });
       }
-
       const totalBalance = wallets.reduce(
         (sum, wallet) => sum + wallet.balance,
         0,
       );
+
       return totalBalance;
     } catch (error) {
       console.log(error);

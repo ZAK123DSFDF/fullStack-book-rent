@@ -1,6 +1,7 @@
 import {
   All,
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,30 +11,59 @@ import { z } from 'zod';
 @Injectable()
 export class BookService {
   constructor(private prisma: PrismaService) {}
-  async createBook(userId: any, bookData: any): Promise<any> {
+  async createBook(userId: number, bookData: any): Promise<any> {
     try {
       const bookSchema = z.object({
         name: z.string().min(1, 'Name is required'),
         author: z.string().min(1, 'Author is required'),
         price: z.number().positive('Price must be a positive number'),
         count: z.number().int().positive('Count must be a positive integer'),
-        category: z.string(),
+        category: z.string().min(1, 'Category is required'),
       });
+
       const parsed = bookSchema.safeParse(bookData);
       if (!parsed.success) {
         throw new BadRequestException(parsed.error.errors);
       }
+
       const { name, author, price, count, category } = parsed.data;
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      if (user.userStatus !== 'VERIFIED') {
+        throw new ForbiddenException('You are not verified');
+      }
+
+      let existingCategory = await this.prisma.category.findUnique({
+        where: { name: category },
+      });
+      if (!existingCategory) {
+        throw new NotFoundException('category not found');
+      }
       const book = await this.prisma.book.create({
         data: {
           name,
           author,
           price,
           count,
-          category,
-          ownerId: userId,
+          category: {
+            connect: { id: existingCategory.id },
+          },
+          owner: { connect: { id: userId } },
         },
       });
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          uploadNumber: {
+            increment: 1,
+          },
+        },
+      });
+
       return book;
     } catch (error) {
       console.log(error);
@@ -51,24 +81,50 @@ export class BookService {
         author: z.string().optional(),
         price: z.number().positive().optional(),
         count: z.number().int().positive().optional(),
-        categoryId: z.number().int().positive().optional(),
+        category: z.string().optional(),
       });
+
       const parsed = bookSchema.safeParse(bookData);
       if (!parsed.success) {
         throw new BadRequestException(parsed.error.errors);
       }
+
+      const { name, author, price, count, category } = parsed.data;
+
       const book = await this.prisma.book.findUnique({ where: { id: bookId } });
       if (!book) {
         throw new NotFoundException('Book not found');
       }
+
       if (book.ownerId !== userId) {
         throw new BadRequestException(
           'You are not authorized to update this book',
         );
       }
+      let existingCategory = undefined;
+      if (category) {
+        existingCategory = await this.prisma.category.findUnique({
+          where: { name: category },
+        });
+
+        if (!existingCategory) {
+          throw new NotFoundException('Category not found');
+        }
+      }
+
       const updatedBook = await this.prisma.book.update({
         where: { id: bookId },
-        data: parsed.data,
+        data: {
+          name,
+          author,
+          price,
+          count,
+          category: existingCategory
+            ? {
+                connect: { id: existingCategory.id },
+              }
+            : undefined,
+        },
       });
 
       return updatedBook;
@@ -108,18 +164,27 @@ export class BookService {
       if (search) {
         filter.name = { contains: search, mode: 'insensitive' };
       }
+
       if (category) {
         filter.category = { name: { contains: category, mode: 'insensitive' } };
       }
-      if (minPrice !== undefined) {
-        filter.price = { gte: minPrice };
+
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        filter.price = {};
+
+        if (minPrice !== undefined) {
+          filter.price.gte = minPrice;
+        }
+
+        if (maxPrice !== undefined) {
+          filter.price.lte = maxPrice;
+        }
       }
-      if (maxPrice !== undefined) {
-        filter.price = { ...filter.price, lte: maxPrice };
-      }
+
       if (status) {
         filter.status = status;
       }
+
       const allBooks = await this.prisma.book.findMany({ where: filter });
       return allBooks;
     } catch (error) {
@@ -141,16 +206,19 @@ export class BookService {
         throw new NotFoundException('Book not found');
       }
       const userId = book.owner.id;
+      if (book.bookStatus !== 'VERIFIED') {
+        throw new ForbiddenException('The book is not verified');
+      }
       if (book.count <= 0) {
         throw new BadRequestException('No copies available');
       }
-      const bookPrice = parseFloat(book.price);
+      const bookPrice = book.price;
       if (isNaN(bookPrice)) {
         throw new BadRequestException('Invalid book price');
       }
       const wallet = await this.prisma.wallet.create({
         data: {
-          userId: userId,
+          userId,
           balance: bookPrice,
           customDate: parsedDate,
         },
@@ -176,12 +244,96 @@ export class BookService {
       throw error;
     }
   }
-  async getUserBooks(userId: any) {
+  async getUserBooks(
+    userId: any,
+    search?: string,
+    minPrice?: number,
+    maxPrice?: number,
+    status?: string,
+  ): Promise<any> {
     try {
-      const userBooks = this.prisma.book.findMany({
-        where: { ownerId: userId },
+      const filter: any = { ownerId: userId };
+
+      if (search) {
+        filter.name = { contains: search, mode: 'insensitive' };
+      }
+      if (minPrice !== undefined) {
+        filter.price = { gte: minPrice };
+      }
+      if (maxPrice !== undefined) {
+        filter.price = { ...filter.price, lte: maxPrice };
+      }
+      if (status) {
+        filter.status = status;
+      }
+
+      const userBooks = await this.prisma.book.findMany({
+        where: filter,
       });
+
       return userBooks;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  async getCategoryCounts(): Promise<any[]> {
+    try {
+      const categoryCounts = await this.prisma.category.findMany({
+        include: {
+          _count: {
+            select: { books: true },
+          },
+        },
+      });
+      const bookCount = categoryCounts.map((category) => ({
+        name: category.name,
+        bookCount: category._count.books,
+      }));
+      return bookCount;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async getUserCategoryCounts(userId: any): Promise<any[]> {
+    try {
+      const categoryCounts = await this.prisma.book.groupBy({
+        by: ['categoryId'],
+        _count: {
+          _all: true,
+        },
+        where: {
+          ownerId: userId,
+        },
+      });
+      const categoryIds = categoryCounts.map((count) => count.categoryId);
+      const categories = await this.prisma.category.findMany({
+        where: {
+          id: {
+            in: categoryIds,
+          },
+        },
+      });
+      const categoryMap = new Map(categories.map((cat) => [cat.id, cat.name]));
+      const bookCounts = categoryCounts.map((categoryCount) => ({
+        name: categoryMap.get(categoryCount.categoryId) || 'Unknown Category',
+        bookCount: categoryCount._count._all,
+      }));
+      return bookCounts;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async verifyBook(bookId: any) {
+    try {
+      const verifyBook = this.prisma.book.update({
+        where: { id: bookId },
+        data: { bookStatus: 'VERIFIED' },
+      });
+      return verifyBook;
     } catch (error) {
       console.log(error);
       throw error;

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -27,10 +28,7 @@ export class AuthController {
     try {
       const { user, token } = await this.authService.createUser(userData);
       res.cookie('token', token, { httpOnly: true });
-      res.status(200).json({
-        user,
-        token,
-      });
+      res.status(200).json(user);
     } catch (error) {
       console.log(error);
       throw error;
@@ -41,10 +39,7 @@ export class AuthController {
     try {
       const { user, token } = await this.authService.validateUser(userData);
       res.cookie('token', token, { httpOnly: true });
-      res.status(200).json({
-        user,
-        token,
-      });
+      res.status(200).json(user);
     } catch (error) {
       console.log(error);
       throw error;
@@ -55,9 +50,7 @@ export class AuthController {
     try {
       res.clearCookie('token');
       console.log('logout successful');
-      res.status(200).json({
-        message: 'logout successful',
-      });
+      res.status(200).json('logout successful');
     } catch (error) {
       console.log(error);
       res.status(500).json(error.message);
@@ -79,6 +72,7 @@ export class AuthController {
     }
   }
   @Patch('verifyUser/:userId')
+  @UseGuards(JwtAuthGuard)
   async verifyUser(
     @Param('userId') userId: number,
     @Request() req,
@@ -91,7 +85,8 @@ export class AuthController {
       if (role !== 'ADMIN') {
         throw new ForbiddenException('You are not an admin');
       }
-      const updatedUser = await this.authService.verifyUser(userId);
+      const userIdInt = +userId;
+      const updatedUser = await this.authService.verifyUser(userIdInt);
       res.status(200).json(updatedUser);
     } catch (error) {
       console.log(error);
@@ -99,6 +94,7 @@ export class AuthController {
     }
   }
   @Delete('deleteUser/:userId')
+  @UseGuards(JwtAuthGuard)
   async deleteUser(
     @Param('userId') userId: number,
     @Request() req,
@@ -107,12 +103,17 @@ export class AuthController {
     const token = req.cookies['token'];
     const decoded = this.jwt.decode(token);
     const role = decoded.role;
+    const id = decoded.user;
     if (role !== 'ADMIN') {
       throw new ForbiddenException('You are not an admin');
     }
     try {
-      await this.authService.deleteUser(userId);
-      return res.status(200).json({ message: 'User deleted successfully' });
+      const userIdInt = +userId;
+      if (userIdInt === id) {
+        throw new BadRequestException('you can not delete yourself');
+      }
+      await this.authService.deleteUser(userIdInt);
+      return res.status(200).json('User deleted successfully');
     } catch (error) {
       console.log(error);
       throw error;
@@ -128,7 +129,9 @@ export class AuthController {
     @Query('userStatus') userStatus?: string,
   ) {
     try {
-      const role = req.cookies['token'].role;
+      const token = req.cookies['token'];
+      const decoded = this.jwt.decode(token);
+      const role = decoded.role;
       if (role !== 'ADMIN') {
         throw new ForbiddenException('You are not an admin');
       }
@@ -137,7 +140,7 @@ export class AuthController {
         location,
         userStatus,
       );
-      res.status(200).json({ users });
+      res.status(200).json(users);
     } catch (error) {
       console.log(error);
       throw error;
