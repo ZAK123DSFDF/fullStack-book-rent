@@ -1,7 +1,7 @@
 import { getAuthData } from "@/app/actions/getAuth";
 import AdminDashboard from "@/app/components/auth/admin/Dashboard";
 import { redirect } from "next/navigation";
-
+export const dynamic = "force-dynamic";
 export default async function page() {
   const data = await getAuthData();
   if (!data.isAuthenticated) {
