@@ -19,7 +19,7 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid"; // Import uuid
-
+import { Toaster, toast } from "sonner";
 export default function BookUpload() {
   const [book, setBook] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
@@ -41,8 +41,11 @@ export default function BookUpload() {
       setBooks(data);
     }
   }, [data]);
-  const { mutate } = useMutation({
+  const { mutate, isPending, isError } = useMutation({
     mutationFn: getCreateBook,
+    onSuccess: () => {
+      toast("Uploaded successfully");
+    },
   });
   const handleChange = (event: any) => {
     const selectedValue = event.target.value;
@@ -213,8 +216,9 @@ export default function BookUpload() {
               InputProps={{ inputProps: { min: 50, max: 1000 } }} // Optionally, set min value to 0
             />
             <Button type="submit" variant="contained" color="primary">
-              Upload
+              {isPending ? "uploading..." : "upload"}
             </Button>
+            {isError && <Typography>something went wrong</Typography>}
           </form>
           <Dialog open={openDialog} onClose={handleCloseDialog}>
             <DialogTitle>Add New Book</DialogTitle>
