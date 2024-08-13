@@ -11,7 +11,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -121,7 +125,13 @@ export default function DashboardBottomRightTop() {
       [e.target.name]: e.target.value,
     });
   };
-
+  const categories = [
+    "Science Fiction",
+    "Fantasy",
+    "Mystery",
+    "Biography",
+    "Non-Fiction",
+  ];
   const handleSubmit = (e: any) => {
     e.preventDefault();
     const updatedData = {
@@ -268,6 +278,20 @@ export default function DashboardBottomRightTop() {
               maxHeight: "100%",
               backgroundColor: "transparent",
               boxShadow: "none",
+              overflowY: "auto", // Ensure the scrollbar is visible
+              "&::-webkit-scrollbar": {
+                width: "6px",
+              },
+              "&::-webkit-scrollbar-track": {
+                backgroundColor: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "rgba(0, 0, 0, 0.3)",
+                borderRadius: "10px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+              },
             }}
           >
             <Table sx={{ backgroundColor: "transparent" }}>
@@ -374,14 +398,21 @@ export default function DashboardBottomRightTop() {
                 onChange={handleChange}
                 margin="normal"
               />
-              <TextField
-                label="Category"
-                name="categoryName" // Adjust field name if necessary
-                fullWidth
-                value={formValues.categoryName}
-                onChange={handleChange}
-                margin="normal"
-              />
+              <FormControl fullWidth margin="dense">
+                <InputLabel>Category</InputLabel>
+                <Select
+                  name="categoryName"
+                  value={formValues.categoryName}
+                  onChange={handleChange}
+                  label="Category"
+                >
+                  {categories.map((category) => (
+                    <MenuItem key={category} value={category}>
+                      {category}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <DialogActions>
                 <Button onClick={handleCloseModal}>Cancel</Button>
                 <Button type="submit" disabled={updatingBook}>

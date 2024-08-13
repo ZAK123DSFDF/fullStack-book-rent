@@ -19,7 +19,9 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid"; // Import uuid
-import { Toaster, toast } from "sonner";
+
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 export default function BookUpload() {
   const [book, setBook] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
@@ -44,7 +46,9 @@ export default function BookUpload() {
   const { mutate, isPending, isError } = useMutation({
     mutationFn: getCreateBook,
     onSuccess: () => {
-      toast("Uploaded successfully");
+      setBook("");
+      setCount("");
+      setPrice("");
     },
   });
   const handleChange = (event: any) => {
@@ -77,7 +81,7 @@ export default function BookUpload() {
       console.log("Book not found");
     }
   };
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (!book || !count || !price) {
       alert("Please fill out all required fields.");
@@ -142,7 +146,6 @@ export default function BookUpload() {
     // Close the dialog
     handleCloseDialog();
   };
-
   return (
     <Box
       sx={{
