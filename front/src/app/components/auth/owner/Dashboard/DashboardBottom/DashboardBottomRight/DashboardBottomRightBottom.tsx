@@ -23,7 +23,6 @@ import {
   startOfYear,
 } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
-import { getRangeDate } from "@/app/actions/getRangeDate";
 import { getUserRangeBalance } from "@/app/actions/getUserRangeBalance";
 import { ChevronDown } from "lucide-react";
 
@@ -38,7 +37,7 @@ export default function DashboardBottomRightBottom() {
   });
   const [openDate, setOpenDate] = useState(false);
 
-  const handleChange = (ranges) => {
+  const handleChange = (ranges: any) => {
     const { startDate, endDate } = ranges.selection;
     setDate({ startDate, endDate, key: "selection" });
   };
@@ -75,7 +74,7 @@ export default function DashboardBottomRightBottom() {
   const xAxisData = generateXAxisData();
 
   // Transform the response data into chart-compatible format
-  const transformData = (data) => {
+  const transformData = (data: any) => {
     if (data) {
       console.log("this is the data", data);
       // Extract balances

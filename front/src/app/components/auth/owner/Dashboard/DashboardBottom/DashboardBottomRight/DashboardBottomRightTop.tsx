@@ -56,6 +56,7 @@ export default function DashboardBottomRightTop() {
     queryFn: () =>
       getOwnerBooks(
         nameSearch as string,
+        //@ts-ignore
         minPriceSearch,
         maxPriceSearch,
         statusSearch as string
@@ -65,7 +66,8 @@ export default function DashboardBottomRightTop() {
   const { isPending: deletingBook, mutate: deleteBook } = useMutation({
     mutationFn: getDeleteBook,
     onSuccess: () => {
-      queryClient.invalidateQueries(["books"]);
+      //@ts-ignore
+      queryClient.invalidateQueries("books");
     },
   });
 
@@ -82,7 +84,8 @@ export default function DashboardBottomRightTop() {
   const { mutate: updateBookData, isPending: updatingBook } = useMutation({
     mutationFn: getUpdateBook,
     onSuccess: () => {
-      queryClient.invalidateQueries(["books"]);
+      //@ts-ignore
+      queryClient.invalidateQueries("books");
       handleCloseModal();
     },
   });
@@ -102,7 +105,7 @@ export default function DashboardBottomRightTop() {
     }
   }, [bookData]);
 
-  const handleEditClick = (id) => {
+  const handleEditClick = (id: any) => {
     setSelectedBookId(id);
     setIsModalOpen(true);
   };
@@ -112,14 +115,14 @@ export default function DashboardBottomRightTop() {
     setSelectedBookId(null);
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: any) => {
     setFormValues({
       ...formValues,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     const updatedData = {
       name: formValues.name,
@@ -135,7 +138,7 @@ export default function DashboardBottomRightTop() {
     });
   };
 
-  const handleSubmit1 = (e) => {
+  const handleSubmit1 = (e: any) => {
     e.preventDefault();
     // Log the current values of the fields
     console.log("Search Values:", {
@@ -294,7 +297,7 @@ export default function DashboardBottomRightTop() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data.map((book) => (
+                {data.map((book: any) => (
                   <TableRow key={book.id}>
                     <TableCell sx={{ padding: "8px" }}>{book.id}</TableCell>
                     <TableCell sx={{ padding: "8px" }}>{book.name}</TableCell>
