@@ -1,6 +1,7 @@
 import {
   All,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -13,6 +14,11 @@ export class BookService {
   constructor(private prisma: PrismaService) {}
   async createBook(userId: number, bookData: any): Promise<any> {
     try {
+      const parsedData = {
+        ...bookData,
+        price: Number(bookData.price),
+        count: Number(bookData.count),
+      };
       const bookSchema = z.object({
         name: z.string().min(1, 'Name is required'),
         author: z.string().min(1, 'Author is required'),
@@ -21,7 +27,7 @@ export class BookService {
         category: z.string().min(1, 'Category is required'),
       });
 
-      const parsed = bookSchema.safeParse(bookData);
+      const parsed = bookSchema.safeParse(parsedData);
       if (!parsed.success) {
         throw new BadRequestException(parsed.error.errors);
       }
@@ -80,7 +86,7 @@ export class BookService {
         name: z.string().optional(),
         author: z.string().optional(),
         price: z.number().positive().optional(),
-        count: z.number().int().positive().optional(),
+        count: z.number().int().nonnegative().optional(),
         category: z.string().optional(),
       });
 
@@ -237,7 +243,7 @@ export class BookService {
   }
   async getAllBooksSearch() {
     try {
-      const books = this.prisma.book.findMany();
+      const books = this.prisma.book.findMany({ include: { category: true } });
       return books;
     } catch (error) {
       console.log(error);
@@ -299,6 +305,13 @@ export class BookService {
   }
   async getUserCategoryCounts(userId: any): Promise<any[]> {
     try {
+      // Step 1: Fetch all categories
+      const allCategories = await this.prisma.category.findMany();
+      const allCategoryMap = new Map(
+        allCategories.map((cat) => [cat.id, cat.name]),
+      );
+
+      // Step 2: Fetch category counts for the user
       const categoryCounts = await this.prisma.book.groupBy({
         by: ['categoryId'],
         _count: {
@@ -308,20 +321,19 @@ export class BookService {
           ownerId: userId,
         },
       });
-      const categoryIds = categoryCounts.map((count) => count.categoryId);
-      const categories = await this.prisma.category.findMany({
-        where: {
-          id: {
-            in: categoryIds,
-          },
-        },
-      });
-      const categoryMap = new Map(categories.map((cat) => [cat.id, cat.name]));
-      const bookCounts = categoryCounts.map((categoryCount) => ({
-        name: categoryMap.get(categoryCount.categoryId) || 'Unknown Category',
-        bookCount: categoryCount._count._all,
+
+      // Step 3: Create a map from category ID to count
+      const categoryCountMap = new Map(
+        categoryCounts.map((count) => [count.categoryId, count._count._all]),
+      );
+
+      // Step 4: Combine results ensuring all categories are included
+      const result = allCategories.map((cat) => ({
+        name: cat.name,
+        bookCount: categoryCountMap.get(cat.id) || 0,
       }));
-      return bookCounts;
+
+      return result;
     } catch (error) {
       console.log(error);
       throw error;
@@ -336,6 +348,17 @@ export class BookService {
       return verifyBook;
     } catch (error) {
       console.log(error);
+      throw error;
+    }
+  }
+  async getSingleBook(bookId: any) {
+    try {
+      const SingleBook = this.prisma.book.findUnique({
+        where: { id: bookId },
+        include: { category: true },
+      });
+      return SingleBook;
+    } catch (error) {
       throw error;
     }
   }

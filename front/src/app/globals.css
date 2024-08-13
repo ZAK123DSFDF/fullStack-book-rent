@@ -1,0 +1,83 @@
+/* Reset margin and padding */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+/* Set box-sizing for all elements to border-box */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Ensure images and other content do not overflow their containers */
+img,
+video,
+iframe,
+object,
+embed {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Normalize font size and line height */
+body {
+  font-family: sans-serif; /* You can customize this */
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Set default link styles */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Remove default list styling */
+ul,
+ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Remove default form element styling */
+button,
+input,
+textarea,
+select {
+  font-family: inherit; /* Inherit font from body */
+  font-size: inherit; /* Inherit font size from body */
+  line-height: inherit; /* Inherit line height from body */
+  border: none;
+  background: none;
+  outline: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Basic utility classes */
+.hidden {
+  display: none;
+}
+
+.visible {
+  visibility: visible;
+}
+
+.invisible {
+  visibility: hidden;
+}
+.dateRange {
+  position: absolute; /* Ensure it’s positioned relative to its parent */
+  background: white; /* Set a solid background color */
+  z-index: 1000; /* Ensure it’s above other content */
+  border-radius: 4px; /* Optional: Add rounded corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  bottom: 30px; /* Optional: Add shadow for better visibility */
+}

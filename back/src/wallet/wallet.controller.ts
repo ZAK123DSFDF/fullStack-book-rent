@@ -1,9 +1,7 @@
 import {
   BadRequestException,
   Controller,
-  ForbiddenException,
   Get,
-  NotFoundException,
   Query,
   Request,
   Response,
@@ -11,7 +9,13 @@ import {
 } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { JwtService } from '@nestjs/jwt';
-import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { JwtAuthGuard } from 'src/guards/jwt.guard';
+import { PoliciesGuard } from 'src/guards/Policies.guard';
+import { CheckPolicies } from 'src/decorators/CheckPolicies';
+import { AppAbility } from 'src/casl/casl-ability.factory';
+import { Action } from 'src/utils/enum';
+import { Book } from 'src/classes/Book';
+import { All } from 'src/classes/All';
 
 @Controller('wallet')
 export class WalletController {
@@ -20,77 +24,48 @@ export class WalletController {
     private jwt: JwtService,
   ) {}
   @Get('balance')
-  @UseGuards(JwtAuthGuard)
-  async getBalance(
-    @Request() req,
-    @Response() res,
-    @Query('month') month?: number,
-    @Query('year') year?: number,
-  ): Promise<any> {
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, All))
+  async getBalance(@Request() req, @Response() res): Promise<any> {
     try {
-      const token = req.cookies['token'];
-      const decoded = this.jwt.decode(token);
-      const role = decoded.role;
-      if (role !== 'ADMIN') {
-        throw new ForbiddenException('You are not an admin');
-      }
-      const balance = await this.walletService.getTotalOrMonthlyBalance(
-        month,
-        year,
-      );
-      res.status(200).json(balance);
+      const balanceData = await this.walletService.getTotalOrMonthlyBalance();
+      res.status(200).json(balanceData);
     } catch (error) {
       console.log(error);
-      throw error;
+      res.status(500).json({ error: error.message });
     }
   }
   @Get('balanceByRange')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, All))
   async getBalanceByRange(
     @Request() req,
     @Response() res,
-    @Query('startMonth') startMonth?: number,
-    @Query('startYear') startYear?: number,
-    @Query('endMonth') endMonth?: number,
-    @Query('endYear') endYear?: number,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
   ) {
     try {
-      const token = req.cookies['token'];
-      const decoded = this.jwt.decode(token);
-      const role = decoded.role;
-      if (role !== 'ADMIN') {
-        throw new ForbiddenException('You are not an admin');
-      }
-      const currentDate = new Date();
-      const defaultStartYear = 1900;
-      const defaultStartMonth = 1;
-      const defaultEndYear = currentDate.getFullYear();
-      const defaultEndMonth = currentDate.getMonth() + 1;
-
-      const validStartMonth =
-        startMonth && startMonth >= 1 && startMonth <= 12
-          ? startMonth
-          : defaultStartMonth;
-      const validStartYear =
-        startYear && startYear >= 1900 ? startYear : defaultStartYear;
-      const validEndMonth =
-        endMonth && endMonth >= 1 && endMonth <= 12
-          ? endMonth
-          : defaultEndMonth;
-      const validEndYear =
-        endYear && endYear >= 1900 ? endYear : defaultEndYear;
-      if (
-        new Date(validStartYear, validStartMonth - 1) >
-        new Date(validEndYear, validEndMonth - 1)
-      ) {
-        throw new BadRequestException('Invalid date range');
-      }
-      const totalBalance = await this.walletService.getBalanceByRange(
-        validStartMonth,
-        validStartYear,
-        validEndMonth,
-        validEndYear,
+      const defaultStartDate = new Date(
+        new Date().setFullYear(new Date().getFullYear() - 1),
       );
+      const defaultEndDate = new Date();
+      const parsedStartDate = startDate
+        ? new Date(startDate)
+        : defaultStartDate;
+      const parsedEndDate = endDate ? new Date(endDate) : defaultEndDate;
+      if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+        throw new BadRequestException('Invalid date format');
+      }
+
+      if (parsedStartDate > parsedEndDate) {
+        throw new BadRequestException('Start date must be before end date');
+      }
+
+      const totalBalance = await this.walletService.getBalanceByRange(
+        parsedStartDate.toISOString().split('T')[0],
+        parsedEndDate.toISOString().split('T')[0],
+      );
+
       res.status(200).json(totalBalance);
     } catch (error) {
       console.log(error);
@@ -98,75 +73,59 @@ export class WalletController {
     }
   }
   @Get('userBalance')
-  @UseGuards(JwtAuthGuard)
-  async getUserBalance(
-    @Request() req,
-    @Response() res,
-    @Query('month') month?: number,
-    @Query('year') year?: number,
-  ): Promise<any> {
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Update, Book))
+  async getUserBalance(@Request() req, @Response() res): Promise<any> {
     try {
       const token = req.cookies['token'];
       const decoded = this.jwt.decode(token);
       const userId = decoded.user;
-      const balance = await this.walletService.getUserTotalOrMonthlyBalance(
-        userId,
-        month,
-        year,
-      );
-      res.status(200).json(balance);
+      const balanceData =
+        await this.walletService.getUserTotalOrMonthlyBalance(userId);
+
+      res.status(200).json(balanceData);
     } catch (error) {
       console.log(error);
-      throw error;
+      res.status(500).json({ error: error.message });
     }
   }
-  @Get('userBalanceByRange')
-  @UseGuards(JwtAuthGuard)
-  async getUserBalanceByRange(
+  @Get('userMonthlyBalancesByRange')
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Update, Book))
+  async getUserMonthlyBalancesByRange(
     @Request() req,
     @Response() res,
-    @Query('startMonth') startMonth?: number,
-    @Query('startYear') startYear?: number,
-    @Query('endMonth') endMonth?: number,
-    @Query('endYear') endYear?: number,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
   ) {
     try {
       const token = req.cookies['token'];
       const decoded = this.jwt.decode(token);
       const userId = decoded.user;
-      const currentDate = new Date();
-      const defaultStartYear = 1900;
-      const defaultStartMonth = 1;
-      const defaultEndYear = currentDate.getFullYear();
-      const defaultEndMonth = currentDate.getMonth() + 1;
-
-      const validStartMonth =
-        startMonth && startMonth >= 1 && startMonth <= 12
-          ? startMonth
-          : defaultStartMonth;
-      const validStartYear =
-        startYear && startYear >= 1900 ? startYear : defaultStartYear;
-      const validEndMonth =
-        endMonth && endMonth >= 1 && endMonth <= 12
-          ? endMonth
-          : defaultEndMonth;
-      const validEndYear =
-        endYear && endYear >= 1900 ? endYear : defaultEndYear;
-      if (
-        new Date(validStartYear, validStartMonth - 1) >
-        new Date(validEndYear, validEndMonth - 1)
-      ) {
-        throw new BadRequestException('Invalid date range');
+      const defaultStartDate = new Date(
+        new Date().setFullYear(new Date().getFullYear() - 1),
+      );
+      const defaultEndDate = new Date();
+      const parsedStartDate = startDate
+        ? new Date(startDate)
+        : defaultStartDate;
+      const parsedEndDate = endDate ? new Date(endDate) : defaultEndDate;
+      if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+        throw new BadRequestException('Invalid date format');
       }
 
-      const totalBalance = await this.walletService.getUserBalanceByRange(
-        userId,
-        validStartMonth,
-        validStartYear,
-        validEndMonth,
-        validEndYear,
-      );
-      res.status(200).json(totalBalance);
+      if (parsedStartDate > parsedEndDate) {
+        throw new BadRequestException('Start date must be before end date');
+      }
+
+      const monthlyBalances =
+        await this.walletService.getUserMonthlyBalancesByRange(
+          userId,
+          parsedStartDate.toISOString().split('T')[0],
+          parsedEndDate.toISOString().split('T')[0],
+        );
+
+      res.status(200).json(monthlyBalances);
     } catch (error) {
       console.log(error);
       throw error;

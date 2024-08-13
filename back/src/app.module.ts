@@ -6,9 +6,10 @@ import { BookModule } from './book/book.module';
 import { WalletModule } from './wallet/wallet.module';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from './prisma.service';
+import { CaslModule } from './casl/casl.module';
 
 @Module({
-  imports: [AuthModule, BookModule, BookModule, WalletModule],
+  imports: [AuthModule, BookModule, BookModule, WalletModule, CaslModule],
   controllers: [AppController],
   providers: [AppService, JwtService, PrismaService],
 })

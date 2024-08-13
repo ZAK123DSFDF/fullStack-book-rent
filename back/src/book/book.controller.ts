@@ -1,9 +1,7 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -15,7 +13,13 @@ import {
 } from '@nestjs/common';
 import { BookService } from './book.service';
 import { JwtService } from '@nestjs/jwt';
-import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { JwtAuthGuard } from 'src/guards/jwt.guard';
+import { PoliciesGuard } from 'src/guards/Policies.guard';
+import { CheckPolicies } from 'src/decorators/CheckPolicies';
+import { AppAbility } from 'src/casl/casl-ability.factory';
+import { Action } from 'src/utils/enum';
+import { Book } from 'src/classes/Book';
+import { All } from 'src/classes/All';
 
 @Controller('book')
 export class BookController {
@@ -24,15 +28,13 @@ export class BookController {
     private jwt: JwtService,
   ) {}
   @Post('create')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, Book))
   async createBook(@Request() req, @Response() res, @Body() bookData: any) {
     try {
       const token = req.cookies['token'];
       const decoded = this.jwt.decode(token);
       const userId = decoded.user;
-      if (!userId) {
-        throw new BadRequestException('Invalid token');
-      }
       const createdBook = await this.bookService.createBook(userId, bookData);
       res.status(200).json(createdBook);
     } catch (error) {
@@ -41,7 +43,8 @@ export class BookController {
     }
   }
   @Patch('updateBook/:bookId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Update, Book))
   async updateBook(
     @Request() req,
     @Response() res,
@@ -52,9 +55,6 @@ export class BookController {
       const token = req.cookies['token'];
       const decoded = this.jwt.decode(token);
       const userId = decoded.user;
-      if (!userId) {
-        throw new BadRequestException('Invalid token');
-      }
       const bookIdInt = +bookId;
       const updatedBook = await this.bookService.updateBook(
         userId,
@@ -64,12 +64,13 @@ export class BookController {
 
       res.status(200).json(updatedBook);
     } catch (error) {
-      console.log(error);
+      console.log(error.message);
       throw error;
     }
   }
   @Delete('deleteBook/:bookId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Update, Book))
   async deleteBook(
     @Request() req,
     @Response() res,
@@ -79,9 +80,6 @@ export class BookController {
       const token = req.cookies['token'];
       const decoded = this.jwt.decode(token);
       const userId = decoded.user;
-      if (!userId) {
-        throw new BadRequestException('Invalid token');
-      }
       const bookIdInt = +bookId;
       await this.bookService.deleteBook(userId, bookIdInt);
       res.status(200).json('book deleted');
@@ -91,7 +89,8 @@ export class BookController {
     }
   }
   @Get('AllBooks')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, All))
   async getAllBooks(
     @Request() req,
     @Response() res,
@@ -102,20 +101,19 @@ export class BookController {
     @Query('status') status?: string,
   ) {
     try {
-      const token = req.cookies['token'];
-      const decoded = this.jwt.decode(token);
-      const role = decoded.role;
-      if (role !== 'ADMIN') {
-        throw new ForbiddenException('You are not an admin');
-      }
       const min = minPrice ? parseInt(minPrice, 10) : undefined;
       const max = maxPrice ? parseInt(maxPrice, 10) : undefined;
+      const validStatuses = ['FREE', 'RENTED'];
+      const normalizedStatus = status ? status.toUpperCase() : '';
+      const statusFilter = validStatuses.includes(normalizedStatus)
+        ? normalizedStatus
+        : '';
       const allBooks = await this.bookService.getAllBooks(
         search,
         category,
         min,
         max,
-        status,
+        statusFilter,
       );
 
       res.status(200).json(allBooks);
@@ -153,7 +151,8 @@ export class BookController {
     }
   }
   @Get('getUserBooks')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, Book))
   async getUserBooks(
     @Request() req,
     @Response() res,
@@ -168,12 +167,17 @@ export class BookController {
       const userId = decoded.user;
       const min = minPrice ? parseInt(minPrice, 10) : undefined;
       const max = maxPrice ? parseInt(maxPrice, 10) : undefined;
+      const validStatuses = ['FREE', 'RENTED'];
+      const normalizedStatus = status ? status.toUpperCase() : '';
+      const statusFilter = validStatuses.includes(normalizedStatus)
+        ? normalizedStatus
+        : '';
       const getUserBooks = await this.bookService.getUserBooks(
         userId,
         search,
         min,
         max,
-        status,
+        statusFilter,
       );
 
       res.status(200).json(getUserBooks);
@@ -183,15 +187,10 @@ export class BookController {
     }
   }
   @Get('GetBookCategoryCount')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, All))
   async GetBookCategoryCount(@Request() req, @Response() res) {
     try {
-      const token = req.cookies['token'];
-      const decoded = this.jwt.decode(token);
-      const role = decoded.role;
-      if (role !== 'ADMIN') {
-        throw new ForbiddenException('You are not an admin');
-      }
       const bookCount = await this.bookService.getCategoryCounts();
       res.status(200).json(bookCount);
     } catch (error) {
@@ -200,7 +199,8 @@ export class BookController {
     }
   }
   @Get('getUserCategoryCount')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Update, Book))
   async getUserCategoryCount(@Request() req, @Response() res) {
     try {
       const token = req.cookies['token'];
@@ -215,22 +215,34 @@ export class BookController {
     }
   }
   @Patch('verifyBook/:bookId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, All))
   async verifyBook(
     @Request() req,
     @Response() res,
     @Param('bookId') bookId: any,
   ) {
     try {
-      const token = req.cookies['token'];
-      const decoded = this.jwt.decode(token);
-      const role = decoded.role;
-      if (role !== 'ADMIN') {
-        throw new ForbiddenException('You are not an admin');
-      }
       const bookIdInt = +bookId;
       const verifyBook = await this.bookService.verifyBook(bookIdInt);
       res.status(200).json(verifyBook);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  @Get('getSingleBook/:bookId')
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, Book))
+  async getSingleBook(
+    @Request() req,
+    @Response() res,
+    @Param('bookId') bookId: any,
+  ) {
+    try {
+      const bookIdInt = +bookId;
+      const SingleBook = await this.bookService.getSingleBook(bookIdInt);
+      res.status(200).json(SingleBook);
     } catch (error) {
       console.log(error);
       throw error;

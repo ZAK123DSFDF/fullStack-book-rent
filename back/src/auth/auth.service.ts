@@ -55,6 +55,9 @@ export class AuthService {
   async validateUser(userData: any): Promise<any> {
     try {
       const { email, password } = userData;
+      if (!email || !password) {
+        throw new BadRequestException('Email and password are required');
+      }
       const user = await this.prisma.user.findUnique({ where: { email } });
       if (!user) {
         throw new NotFoundException('user not found');
@@ -124,6 +127,15 @@ export class AuthService {
       filter.role = { not: 'ADMIN' };
       const users = await this.prisma.user.findMany({ where: filter });
       return users;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async getSingleUser(userId: any) {
+    try {
+      const singleUser = this.prisma.user.findUnique({ where: { id: userId } });
+      return singleUser;
     } catch (error) {
       console.log(error);
       throw error;
