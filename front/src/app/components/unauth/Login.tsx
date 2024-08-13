@@ -123,7 +123,7 @@ export default function Login() {
             </Typography>
           )}
           <Typography sx={{ alignSelf: "center" }}>
-            don't have an account?
+            don&#39;t have an account?
             <Link style={{ color: "blue" }} href={"/signup"}>
               {" "}
               Signup

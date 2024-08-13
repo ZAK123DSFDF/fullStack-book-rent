@@ -106,7 +106,7 @@ export default function DashboardBottomRightTop() {
       }, 500);
       return () => clearTimeout(handle);
     }
-  }, [router, name, location, userStatus]);
+  }, [router, name, location, userStatus, hasTyped]);
 
   return (
     <Box

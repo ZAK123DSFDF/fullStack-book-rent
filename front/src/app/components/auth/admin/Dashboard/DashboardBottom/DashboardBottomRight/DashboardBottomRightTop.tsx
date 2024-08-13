@@ -71,7 +71,7 @@ export default function DashboardBottomRightTop() {
       }, 500);
       return () => clearTimeout(handle);
     }
-  }, [router, name, minPrice, maxPrice, status]);
+  }, [router, name, minPrice, maxPrice, status, hasTyped]);
 
   return (
     <Box

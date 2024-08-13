@@ -62,7 +62,7 @@ export default function DashboardBottomRightTop() {
       ),
   });
 
-  const { isLoading: deletingBook, mutate: deleteBook } = useMutation({
+  const { isPending: deletingBook, mutate: deleteBook } = useMutation({
     mutationFn: getDeleteBook,
     onSuccess: () => {
       queryClient.invalidateQueries(["books"]);
@@ -79,7 +79,7 @@ export default function DashboardBottomRightTop() {
     enabled: !!selectedBookId,
   });
 
-  const { mutate: updateBookData, isLoading: updatingBook } = useMutation({
+  const { mutate: updateBookData, isPending: updatingBook } = useMutation({
     mutationFn: getUpdateBook,
     onSuccess: () => {
       queryClient.invalidateQueries(["books"]);
@@ -159,7 +159,7 @@ export default function DashboardBottomRightTop() {
       }, 500);
       return () => clearTimeout(handle);
     }
-  }, [router, name, minPrice, maxPrice, status]);
+  }, [router, name, minPrice, maxPrice, status, hasTyped]);
 
   return (
     <Box
