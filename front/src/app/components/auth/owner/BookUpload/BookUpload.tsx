@@ -44,11 +44,12 @@ export default function BookUpload() {
   const { mutate } = useMutation({
     mutationFn: getCreateBook,
   });
-  const handleChange = (event) => {
+  const handleChange = (event: any) => {
     const selectedValue = event.target.value;
     setBook(selectedValue);
 
     // Find the selected book data
+    //@ts-ignore
     const selectedBook = books.find((item) => item.name === selectedValue);
 
     if (selectedBook) {
@@ -56,9 +57,13 @@ export default function BookUpload() {
 
       // Create an object with the book details
       const bookDetails = {
+        //@ts-ignore
         id: selectedBook.id,
+        //@ts-ignore
         name: selectedBook.name,
+        //@ts-ignore
         category: selectedBook.category,
+        //@ts-ignore
         author: selectedBook.author,
       };
 
@@ -69,7 +74,7 @@ export default function BookUpload() {
       console.log("Book not found");
     }
   };
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     if (!book || !count || !price) {
       alert("Please fill out all required fields.");
@@ -107,6 +112,7 @@ export default function BookUpload() {
 
   // Handle add new book
   const handleAddBook = () => {
+    //@ts-ignore
     const existingBook = books.find((book) => book.name === name);
 
     if (existingBook) {
@@ -126,6 +132,7 @@ export default function BookUpload() {
     console.log("Stored in Local Storage:", localStorage.getItem("books"));
 
     // Update the list of books and set the new book as selected
+    //@ts-ignore
     setBooks((prevBooks) => [...prevBooks, newBookDetails]);
     setBook(name);
 
@@ -182,7 +189,7 @@ export default function BookUpload() {
               autoWidth
               label="Book"
             >
-              {books.map((item) => (
+              {books.map((item: any) => (
                 <MenuItem key={item.id} value={item.name}>
                   {item.name}
                 </MenuItem>
