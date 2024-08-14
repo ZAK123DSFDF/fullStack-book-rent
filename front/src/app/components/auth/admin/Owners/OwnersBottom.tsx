@@ -1,3 +1,4 @@
+"use client";
 import { getAllUsers } from "@/app/actions/getAllUsers";
 import { getDeleteUser } from "@/app/actions/getDeleteUser";
 import { getSingleUser } from "@/app/actions/getSingleUser";
@@ -35,9 +36,6 @@ export default function DashboardBottomRightTop() {
   const [hasTyped, setHasTyped] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [verifyingUserIds, setVerifyingUserIds] = useState<Set<string>>(
-    new Set()
-  );
 
   const handleClickOpen = (userId: any) => {
     setSelectedUser(userId); // Set the selected user ID or user object
@@ -63,29 +61,11 @@ export default function DashboardBottomRightTop() {
       getAllUsers(nameSearch as string, locationSearch, userStatusSearch),
   });
 
-  const { mutate: verifyUser } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: getVerifyUser,
-    onMutate: (userId) => {
-      // Optimistic update: add user ID to the verifying set
-      setVerifyingUserIds((prev) => new Set(prev).add(userId));
-    },
     onSuccess: () => {
       //@ts-ignore
       queryClient.invalidateQueries("getAllUsers");
-      // Remove user ID from the verifying set
-      setVerifyingUserIds((prev) => {
-        const updated = new Set(prev);
-        updated.delete(selectedUser);
-        return updated;
-      });
-    },
-    onError: () => {
-      // Handle error case if needed
-      setVerifyingUserIds((prev) => {
-        const updated = new Set(prev);
-        updated.delete(selectedUser);
-        return updated;
-      });
     },
   });
 
@@ -108,7 +88,7 @@ export default function DashboardBottomRightTop() {
   };
 
   const handleVerify = (id: any) => {
-    verifyUser(id);
+    mutate(id);
   };
 
   useEffect(() => {
@@ -286,9 +266,7 @@ export default function DashboardBottomRightTop() {
                           },
                         }}
                       >
-                        {verifyingUserIds.has(user.id)
-                          ? "Verifying"
-                          : user.userStatus}
+                        {isPending ? "verifying" : user.userStatus}
                       </Button>
                     </TableCell>
                     <TableCell sx={{ padding: "4px" }}>
