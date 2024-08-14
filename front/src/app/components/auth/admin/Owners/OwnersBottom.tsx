@@ -53,26 +53,37 @@ export default function DashboardBottomRightTop() {
   const pathName = usePathname();
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isPending, isError, error } = useQuery({
     queryKey: ["getAllUsers", nameSearch, locationSearch, userStatusSearch],
     queryFn: () =>
       //@ts-ignore
       getAllUsers(nameSearch as string, locationSearch, userStatusSearch),
   });
 
-  const { mutate, isPending } = useMutation({
+  const { mutate, isPending: verifying } = useMutation({
     mutationFn: getVerifyUser,
     onSuccess: () => {
       //@ts-ignore
-      queryClient.invalidateQueries("getAllUsers");
+      queryClient.invalidateQueries([
+        "getAllUsers",
+        nameSearch,
+        locationSearch,
+        userStatusSearch,
+      ]);
     },
   });
 
   const { mutate: deleteUser, isPending: deletingUser } = useMutation({
     mutationFn: getDeleteUser,
     onSuccess: () => {
+      console.log("successfully verified");
       //@ts-ignore
-      queryClient.invalidateQueries("getAllUsers");
+      queryClient.invalidateQueries([
+        "getAllUsers",
+        nameSearch,
+        locationSearch,
+        userStatusSearch,
+      ]);
     },
   });
 
@@ -95,7 +106,6 @@ export default function DashboardBottomRightTop() {
     if (name) queryParams.append("search", name);
     if (location) queryParams.append("location", location);
     if (userStatus) queryParams.append("userStatus", userStatus);
-    router.push(`${pathName}?${queryParams.toString()}`);
   }, [name, location, userStatus, router, pathName]);
 
   useEffect(() => {
@@ -165,7 +175,7 @@ export default function DashboardBottomRightTop() {
         </form>
       </Box>
       <Box>
-        {isLoading ? (
+        {isPending ? (
           <Box
             sx={{
               display: "flex",
