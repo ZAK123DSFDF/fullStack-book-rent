@@ -123,7 +123,8 @@ export default function DashboardBottomRightTop() {
       }}
     >
       <Box sx={{ marginBottom: 2 }}>
-        <form>
+        <Typography sx={{ fontWeight: "bold" }}>List of Owners</Typography>
+        <form style={{ marginTop: "50px" }}>
           <TextField
             label="Name"
             variant="outlined"

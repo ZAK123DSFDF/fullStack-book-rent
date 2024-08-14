@@ -183,9 +183,15 @@ export default function DashboardBottomRightTop() {
         flex: 0,
         padding: 2,
         minHeight: "300px",
+        maxHeight: "400px",
       }}
     >
-      <Box sx={{ marginBottom: 2 }}>
+      <Box sx={{ marginBottom: 2, display: "flex", gap: 6 }}>
+        <Typography
+          sx={{ fontWeight: "bold", marginLeft: "15px", alignSelf: "flex-end" }}
+        >
+          Created Books
+        </Typography>
         <form
           onSubmit={handleSubmit1}
           style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
@@ -232,16 +238,21 @@ export default function DashboardBottomRightTop() {
               setHasTyped(true);
             }}
           />
-          <TextField
-            label="Status"
-            variant="outlined"
-            sx={{ marginRight: 2, width: 150 }} // Adjust width as needed
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setHasTyped(true);
-            }}
-          />
+          <FormControl sx={{ marginRight: 2, width: 150 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              label="Status"
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setHasTyped(true);
+              }}
+            >
+              <MenuItem value="">ALL</MenuItem>
+              <MenuItem value="FREE">FREE</MenuItem>
+              <MenuItem value="RENTED">RENTED</MenuItem>
+            </Select>
+          </FormControl>
         </form>
       </Box>
 
@@ -252,6 +263,19 @@ export default function DashboardBottomRightTop() {
           maxHeight: "250px",
           minHeight: "250px",
           overflow: "auto",
+          "&::-webkit-scrollbar": {
+            width: "6px",
+          },
+          "&::-webkit-scrollbar-track": {
+            backgroundColor: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            borderRadius: "10px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+          },
         }}
       >
         {isLoading ? (
@@ -278,20 +302,6 @@ export default function DashboardBottomRightTop() {
               maxHeight: "100%",
               backgroundColor: "transparent",
               boxShadow: "none",
-              overflowY: "auto", // Ensure the scrollbar is visible
-              "&::-webkit-scrollbar": {
-                width: "6px",
-              },
-              "&::-webkit-scrollbar-track": {
-                backgroundColor: "transparent",
-              },
-              "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "rgba(0, 0, 0, 0.3)",
-                borderRadius: "10px",
-              },
-              "&::-webkit-scrollbar-thumb:hover": {
-                backgroundColor: "rgba(0, 0, 0, 0.5)",
-              },
             }}
           >
             <Table sx={{ backgroundColor: "transparent" }}>

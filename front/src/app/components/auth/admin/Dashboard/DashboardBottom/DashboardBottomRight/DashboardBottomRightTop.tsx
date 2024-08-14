@@ -83,9 +83,21 @@ export default function DashboardBottomRightTop() {
         flex: 0,
         padding: 2,
         minHeight: "300px",
+        maxHeight: "400px",
       }}
     >
-      <Box sx={{ marginBottom: 2 }}>
+      <Box
+        sx={{
+          marginBottom: 2,
+          display: "flex",
+          gap: 6,
+        }}
+      >
+        <Typography
+          sx={{ fontWeight: "bold", marginLeft: "15px", alignSelf: "flex-end" }}
+        >
+          All Books
+        </Typography>
         <form style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <TextField
             label="name"
@@ -157,6 +169,19 @@ export default function DashboardBottomRightTop() {
           overflowX: "hidden",
           overflowY: "auto",
           padding: "8px",
+          "&::-webkit-scrollbar": {
+            width: "6px", // Thinner scrollbar width
+          },
+          "&::-webkit-scrollbar-track": {
+            backgroundColor: "transparent", // Track background
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(0, 0, 0, 0.3)", // Default scrollbar color
+            borderRadius: "10px", // Rounded corners
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.5)", // Darker color on hover
+          },
         }}
       >
         {isLoading ? (
@@ -183,18 +208,29 @@ export default function DashboardBottomRightTop() {
               maxHeight: "100%",
               backgroundColor: "transparent",
               boxShadow: "none",
-              margin: "8px",
             }}
           >
             <Table sx={{ backgroundColor: "transparent" }}>
               <TableHead sx={{ position: "sticky", top: 0, zIndex: 1 }}>
                 <TableRow>
-                  <TableCell sx={{ padding: "8px" }}>Book ID</TableCell>
-                  <TableCell sx={{ padding: "8px" }}>Book Name</TableCell>
-                  <TableCell sx={{ padding: "8px" }}>Book Author</TableCell>
-                  <TableCell sx={{ padding: "8px" }}>Status</TableCell>
-                  <TableCell sx={{ padding: "8px" }}>Count</TableCell>
-                  <TableCell sx={{ padding: "8px" }}>Price</TableCell>
+                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
+                    Book ID
+                  </TableCell>
+                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
+                    Book Name
+                  </TableCell>
+                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
+                    Book Author
+                  </TableCell>
+                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
+                    Status
+                  </TableCell>
+                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
+                    Count
+                  </TableCell>
+                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
+                    Price
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
