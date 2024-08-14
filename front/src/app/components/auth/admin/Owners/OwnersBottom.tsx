@@ -35,6 +35,9 @@ export default function DashboardBottomRightTop() {
   const [hasTyped, setHasTyped] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [verifyingUserIds, setVerifyingUserIds] = useState<Set<string>>(
+    new Set()
+  );
 
   const handleClickOpen = (userId: any) => {
     setSelectedUser(userId); // Set the selected user ID or user object
@@ -60,11 +63,29 @@ export default function DashboardBottomRightTop() {
       getAllUsers(nameSearch as string, locationSearch, userStatusSearch),
   });
 
-  const { mutate, isPending } = useMutation({
+  const { mutate: verifyUser } = useMutation({
     mutationFn: getVerifyUser,
+    onMutate: (userId) => {
+      // Optimistic update: add user ID to the verifying set
+      setVerifyingUserIds((prev) => new Set(prev).add(userId));
+    },
     onSuccess: () => {
       //@ts-ignore
       queryClient.invalidateQueries("getAllUsers");
+      // Remove user ID from the verifying set
+      setVerifyingUserIds((prev) => {
+        const updated = new Set(prev);
+        updated.delete(selectedUser);
+        return updated;
+      });
+    },
+    onError: () => {
+      // Handle error case if needed
+      setVerifyingUserIds((prev) => {
+        const updated = new Set(prev);
+        updated.delete(selectedUser);
+        return updated;
+      });
     },
   });
 
@@ -87,7 +108,7 @@ export default function DashboardBottomRightTop() {
   };
 
   const handleVerify = (id: any) => {
-    mutate(id);
+    verifyUser(id);
   };
 
   useEffect(() => {
@@ -265,7 +286,9 @@ export default function DashboardBottomRightTop() {
                           },
                         }}
                       >
-                        {isPending ? "verifying" : user.userStatus}
+                        {verifyingUserIds.has(user.id)
+                          ? "Verifying"
+                          : user.userStatus}
                       </Button>
                     </TableCell>
                     <TableCell sx={{ padding: "4px" }}>
