@@ -89,13 +89,15 @@ export default function BookUpload() {
     }
     const storeData = localStorage.getItem("books");
     const parseData = JSON.parse(storeData as string);
+    console.log("this is the parseData", parseData);
     const data = {
       name: parseData.name,
       author: parseData.author,
-      price,
-      count,
-      category: parseData.category.name,
+      price, // Ensure price is a number
+      count, // Ensure count is an integer
+      category: parseData.category,
     };
+    console.log("this is the final data", data);
     mutate(data);
     console.log(parseData);
     console.log(parseData.name, parseData.author, parseData.category.name);

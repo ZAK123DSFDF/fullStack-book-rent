@@ -16,8 +16,8 @@ export class BookService {
     try {
       const parsedData = {
         ...bookData,
-        price: Number(bookData.price),
-        count: Number(bookData.count),
+        price: +bookData.price,
+        count: +bookData.count,
       };
       const bookSchema = z.object({
         name: z.string().min(1, 'Name is required'),
@@ -28,11 +28,20 @@ export class BookService {
       });
 
       const parsed = bookSchema.safeParse(parsedData);
+
+      console.log('this is the parsed data', parsed);
       if (!parsed.success) {
         throw new BadRequestException(parsed.error.errors);
       }
 
       const { name, author, price, count, category } = parsed.data;
+      console.log(
+        typeof name,
+        typeof author,
+        typeof price,
+        typeof count,
+        typeof category,
+      );
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
       });
