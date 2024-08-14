@@ -69,11 +69,11 @@ export default function BookUpload() {
         //@ts-ignore
         name: selectedBook.name,
         //@ts-ignore
-        category: selectedBook.category,
+        category: selectedBook.category.name,
         //@ts-ignore
         author: selectedBook.author,
       };
-
+      console.log("this is the book details", bookDetails);
       // Store the object in local storage
       localStorage.setItem("books", JSON.stringify(bookDetails));
       console.log("Stored in Local Storage:", localStorage.getItem("books"));
