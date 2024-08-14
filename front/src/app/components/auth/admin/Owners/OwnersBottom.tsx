@@ -1,4 +1,3 @@
-"use client";
 import { getAllUsers } from "@/app/actions/getAllUsers";
 import { getDeleteUser } from "@/app/actions/getDeleteUser";
 import { getSingleUser } from "@/app/actions/getSingleUser";
@@ -266,7 +265,7 @@ export default function DashboardBottomRightTop() {
                           },
                         }}
                       >
-                        {isPending ? "verifying" : user.userStatus}
+                        {user.userStatus}
                       </Button>
                     </TableCell>
                     <TableCell sx={{ padding: "4px" }}>
@@ -283,7 +282,7 @@ export default function DashboardBottomRightTop() {
                         color="error"
                         onClick={() => handleDelete(user.id)}
                       >
-                        {deletingUser ? "Deleting" : "Delete"}
+                        Delete
                       </Button>
                     </TableCell>
                   </TableRow>
