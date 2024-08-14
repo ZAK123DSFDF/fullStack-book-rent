@@ -60,7 +60,7 @@ export default function DashboardBottomRightTop() {
       getAllUsers(nameSearch as string, locationSearch, userStatusSearch),
   });
 
-  const { mutate } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: getVerifyUser,
     onSuccess: () => {
       //@ts-ignore
@@ -265,7 +265,7 @@ export default function DashboardBottomRightTop() {
                           },
                         }}
                       >
-                        {user.userStatus}
+                        {isPending ? "verifying" : user.userStatus}
                       </Button>
                     </TableCell>
                     <TableCell sx={{ padding: "4px" }}>
