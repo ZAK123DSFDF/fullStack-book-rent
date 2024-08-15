@@ -226,7 +226,7 @@ export default function BookUpload() {
             <Button type="submit" variant="contained" color="primary">
               {isPending ? "uploading..." : "upload"}
             </Button>
-            {isError && <Typography>{uploadError.message}</Typography>}
+            {isError && <Typography>you are not verified</Typography>}
           </form>
           <Dialog open={openDialog} onClose={handleCloseDialog}>
             <DialogTitle>Add New Book</DialogTitle>
