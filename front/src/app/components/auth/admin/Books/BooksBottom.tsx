@@ -1,26 +1,27 @@
 import { getAdminBook } from "@/app/actions/getAdminBook";
 import { getVerifyBook } from "@/app/actions/getVerifyBook";
 import {
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef, //if using TypeScript (optional, but recommended)
+} from "material-react-table";
+import {
   Box,
   Button,
   CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Typography,
   FormControl,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
 export default function DashboardBottomRightTop() {
   const searchParams = useSearchParams();
@@ -29,14 +30,75 @@ export default function DashboardBottomRightTop() {
   const [maxPrice, setMaxPrice] = useState("");
   const [status, setStatus] = useState("");
   const [hasTyped, setHasTyped] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [bookData, setBookData] = useState([]);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  // Columns definition for the books table
+  const columns = useMemo<MRT_ColumnDef<any>[]>(
+    () => [
+      {
+        accessorKey: "id", // Accessor for the data
+        header: "Book ID",
+        size: 100,
+      },
+      {
+        accessorKey: "name",
+        header: "Book Name",
+        size: 200,
+      },
+      {
+        accessorKey: "author",
+        header: "Book Author",
+        size: 200,
+      },
+      {
+        accessorKey: "count",
+        header: "Count",
+        size: 150,
+      },
+      {
+        accessorKey: "price",
+        header: "Price",
+        size: 150,
+      },
+      {
+        accessorKey: "status",
+        header: "Book Status",
+        size: 150,
+        Cell: ({ row }) => (
+          <Button
+            onClick={() => handleVerify(row.original.id)}
+            variant="contained"
+            sx={{
+              backgroundColor:
+                row.original.bookStatus === "VERIFIED" ? "green" : "blue",
+              color: "white",
+              "&:hover": {
+                backgroundColor:
+                  row.original.bookStatus === "VERIFIED"
+                    ? "darkgreen"
+                    : "darkblue",
+              },
+            }}
+          >
+            {row.original.bookStatus}
+          </Button>
+        ),
+      },
+    ],
+    []
+  );
+
+  // Fetch books based on search parameters
   const nameSearch = useDeferredValue(searchParams.get("search"));
   const minPriceSearch = useDeferredValue(searchParams.get("minPrice"));
   const maxPriceSearch = useDeferredValue(searchParams.get("maxPrice"));
   const statusSearch = useDeferredValue(searchParams.get("status"));
-  const router = useRouter();
-  const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isPending, isError, error } = useQuery({
     queryKey: [
       "getAllBooks",
       nameSearch,
@@ -54,11 +116,23 @@ export default function DashboardBottomRightTop() {
       ),
   });
 
-  const { mutate, isPending } = useMutation({
+  useEffect(() => {
+    if (data) {
+      setBookData(data);
+    }
+  }, [data]);
+
+  const { mutate, isPending: verifying } = useMutation({
     mutationFn: getVerifyBook,
     onSuccess: () => {
       //@ts-ignore
-      queryClient.invalidateQueries("getAllBooks");
+      queryClient.invalidateQueries([
+        "getAllBooks",
+        nameSearch,
+        minPriceSearch,
+        maxPriceSearch,
+        statusSearch,
+      ]);
     },
   });
 
@@ -88,6 +162,14 @@ export default function DashboardBottomRightTop() {
     }
   }, [router, name, minPrice, maxPrice, status, hasTyped]);
 
+  const table = useMaterialReactTable({
+    columns,
+    data: bookData || [],
+    enableRowSelection: true,
+    enableColumnOrdering: true,
+    enableGlobalFilter: true,
+  });
+
   return (
     <Box
       sx={{
@@ -97,6 +179,7 @@ export default function DashboardBottomRightTop() {
         padding: 2,
         borderRadius: "8px",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
+        maxWidth: "1300px",
       }}
     >
       <Box sx={{ marginBottom: 2 }}>
@@ -144,18 +227,17 @@ export default function DashboardBottomRightTop() {
               setHasTyped(true);
             }}
           />
-          <FormControl
-            variant="outlined"
-            sx={{ marginRight: 2, minWidth: 150 }}
-          >
-            <InputLabel>Status</InputLabel>
+          <FormControl sx={{ marginRight: 2, minWidth: 150 }}>
+            <InputLabel id="status-select-label">Status</InputLabel>
             <Select
-              label="Status"
+              labelId="status-select-label"
+              id="status-select"
               value={status}
               onChange={(e) => {
                 setStatus(e.target.value);
                 setHasTyped(true);
               }}
+              label="Status"
             >
               <MenuItem value="">ALL</MenuItem>
               <MenuItem value="FREE">FREE</MenuItem>
@@ -164,112 +246,26 @@ export default function DashboardBottomRightTop() {
           </FormControl>
         </form>
       </Box>
-      <Box>
-        {isLoading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "400px",
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : isError ? (
-          <Typography sx={{ color: "red", textAlign: "center" }}>
-            Error loading books: {error.message}
-          </Typography>
-        ) : data?.length === 0 ? (
-          <Typography sx={{ textAlign: "center" }}>No books found.</Typography>
-        ) : (
-          <TableContainer
-            component={Paper}
-            sx={{
-              maxHeight: "400px",
-              overflowY: "auto",
-              backgroundColor: "transparent",
-              boxShadow: "none",
-              "&::-webkit-scrollbar": {
-                width: "6px",
-              },
-              "&::-webkit-scrollbar-track": {
-                backgroundColor: "transparent",
-              },
-              "&::-webkit-scrollbar-thumb": {
-                backgroundColor: "rgba(0, 0, 0, 0.3)",
-                borderRadius: "10px",
-              },
-              "&::-webkit-scrollbar-thumb:hover": {
-                backgroundColor: "rgba(0, 0, 0, 0.5)",
-              },
-            }}
-          >
-            <Table sx={{ backgroundColor: "transparent" }}>
-              <TableHead>
-                <TableRow sx={{ fontWeight: "bold" }}>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Book ID
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Book Name
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Book Author
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Status
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Count
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Price
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Book Status
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {data?.map((book: any) => (
-                  <TableRow key={book.id}>
-                    <TableCell sx={{ padding: "4px" }}>{book.id}</TableCell>
-                    <TableCell sx={{ padding: "4px" }}>{book.name}</TableCell>
-                    <TableCell sx={{ padding: "4px" }}>{book.author}</TableCell>
-                    <TableCell sx={{ padding: "4px" }}>
-                      {book.count === 0 ? "Rented" : "Free"}
-                    </TableCell>
-                    <TableCell sx={{ padding: "4px" }}>{book.count}</TableCell>
-                    <TableCell sx={{ padding: "4px" }}>${book.price}</TableCell>
-                    <TableCell sx={{ padding: "4px" }}>
-                      <Button
-                        onClick={() => handleVerify(book.id)}
-                        variant="contained"
-                        sx={{
-                          backgroundColor:
-                            book.bookStatus === "VERIFIED"
-                              ? "green"
-                              : "primary.main",
-                          color: "white",
-                          "&:hover": {
-                            backgroundColor:
-                              book.bookStatus === "VERIFIED"
-                                ? "darkgreen"
-                                : "primary.dark",
-                          },
-                        }}
-                      >
-                        {book.bookStatus}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Box>
+      {isPending ? (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "400px",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      ) : isError ? (
+        <Typography sx={{ color: "red", textAlign: "center" }}>
+          Error loading books: {error.message}
+        </Typography>
+      ) : bookData?.length === 0 ? (
+        <Typography sx={{ textAlign: "center" }}>No books found.</Typography>
+      ) : (
+        <MaterialReactTable table={table} />
+      )}
     </Box>
   );
 }

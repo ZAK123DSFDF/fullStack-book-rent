@@ -16,18 +16,17 @@ import {
   MenuItem,
   Paper,
   Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useDeferredValue } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef,
+} from "material-react-table";
 
 export default function DashboardBottomRightTop() {
   const queryClient = useQueryClient();
@@ -43,11 +42,54 @@ export default function DashboardBottomRightTop() {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [status, setStatus] = useState("");
+  const [hasTyped, setHasTyped] = useState(false);
+  const [bookData, setBookData] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const searchParams = useSearchParams();
   const nameSearch = useDeferredValue(searchParams.get("search"));
   const minPriceSearch = useDeferredValue(searchParams.get("minPrice"));
   const maxPriceSearch = useDeferredValue(searchParams.get("maxPrice"));
   const statusSearch = useDeferredValue(searchParams.get("status"));
+
+  // Define columns for the MaterialReactTable
+  const columns = useMemo<MRT_ColumnDef<any>[]>(
+    () => [
+      { accessorKey: "id", header: "Book ID", size: 100 },
+      { accessorKey: "name", header: "Book Name", size: 150 },
+      { accessorKey: "author", header: "Book Author", size: 150 },
+      { accessorKey: "count", header: "Count", size: 100 },
+      { accessorKey: "price", header: "Price", size: 100 },
+      { accessorKey: "status", header: "Status", size: 100 },
+      {
+        accessorKey: "action",
+        header: "Action",
+        size: 120,
+        Cell: ({ row }) => (
+          <Box sx={{ display: "flex" }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleEditClick(row.original.id)}
+              size="small"
+            >
+              Edit
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => handleDeleteBook(row.original.id)}
+              sx={{ marginLeft: 1 }}
+              size="small"
+            >
+              Delete
+            </Button>
+          </Box>
+        ),
+      },
+    ],
+    []
+  );
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [
@@ -67,22 +109,18 @@ export default function DashboardBottomRightTop() {
       ),
   });
 
-  const { isPending: deletingBook, mutate: deleteBook } = useMutation({
+  useEffect(() => {
+    if (data) {
+      setBookData(data);
+    }
+  }, [data]);
+
+  const { mutate: deleteBook, isPending: deletingBook } = useMutation({
     mutationFn: getDeleteBook,
     onSuccess: () => {
       //@ts-ignore
       queryClient.invalidateQueries("books");
     },
-  });
-
-  const {
-    data: bookData,
-    isLoading: fetchingBook,
-    isError: fetchingError,
-  } = useQuery({
-    queryKey: ["singleBook", selectedBookId],
-    queryFn: () => getSingleBook(selectedBookId),
-    enabled: !!selectedBookId,
   });
 
   const { mutate: updateBookData, isPending: updatingBook } = useMutation({
@@ -94,20 +132,27 @@ export default function DashboardBottomRightTop() {
     },
   });
 
-  const [hasTyped, setHasTyped] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const {
+    data: bookDataSingle,
+    isLoading: fetchingBook,
+    isError: fetchingError,
+  } = useQuery({
+    queryKey: ["singleBook", selectedBookId],
+    queryFn: () => getSingleBook(selectedBookId),
+    enabled: !!selectedBookId,
+  });
 
   useEffect(() => {
-    if (bookData) {
+    if (bookDataSingle) {
       setFormValues({
-        name: bookData.name || "",
-        author: bookData.author || "",
-        price: bookData.price || "",
-        count: bookData.count || "0",
-        categoryName: bookData.category.name || "",
+        name: bookDataSingle.name || "",
+        author: bookDataSingle.author || "",
+        price: bookDataSingle.price || "",
+        count: bookDataSingle.count || "0",
+        categoryName: bookDataSingle.category.name || "",
       });
     }
-  }, [bookData]);
+  }, [bookDataSingle]);
 
   const handleEditClick = (id: any) => {
     setSelectedBookId(id);
@@ -125,6 +170,7 @@ export default function DashboardBottomRightTop() {
       [e.target.name]: e.target.value,
     });
   };
+
   const categories = [
     "Science Fiction",
     "Fantasy",
@@ -132,6 +178,7 @@ export default function DashboardBottomRightTop() {
     "Biography",
     "Non-Fiction",
   ];
+
   const handleSubmit = (e: any) => {
     e.preventDefault();
     const updatedData = {
@@ -146,6 +193,10 @@ export default function DashboardBottomRightTop() {
       updateData: updatedData,
       bookId: selectedBookId,
     });
+  };
+
+  const handleDeleteBook = (id: any) => {
+    deleteBook(id);
   };
 
   const handleSubmit1 = (e: any) => {
@@ -174,24 +225,33 @@ export default function DashboardBottomRightTop() {
     }
   }, [router, name, minPrice, maxPrice, status, hasTyped]);
 
+  const table = useMaterialReactTable({
+    columns,
+    data: bookData || [],
+  });
+
   return (
     <Box
       sx={{
         width: "100%",
         backgroundColor: "white",
-        borderRadius: "8px",
-        flex: 0,
+        flex: 2,
         padding: 2,
-        minHeight: "300px",
-        maxHeight: "400px",
+        borderRadius: "8px",
+        boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
+        maxWidth: "900px",
+        maxHeight: "400px", // Maximum height for the container
+        display: "flex",
+        flexDirection: "column", // Stack children vertically
       }}
     >
-      <Box sx={{ marginBottom: 2, display: "flex", gap: 6 }}>
-        <Typography
-          sx={{ fontWeight: "bold", marginLeft: "15px", alignSelf: "flex-end" }}
-        >
-          Created Books
-        </Typography>
+      <Box
+        sx={{
+          marginBottom: 2,
+          maxHeight: "300px", // Maximum height for the filter section
+        }}
+      >
+        <Typography sx={{ fontWeight: "bold" }}>Created Books</Typography>
         <form
           onSubmit={handleSubmit1}
           style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
@@ -241,196 +301,127 @@ export default function DashboardBottomRightTop() {
           <FormControl sx={{ marginRight: 2, width: 150 }}>
             <InputLabel>Status</InputLabel>
             <Select
-              label="Status"
               value={status}
               onChange={(e) => {
                 setStatus(e.target.value);
                 setHasTyped(true);
               }}
+              label="Status"
             >
-              <MenuItem value="">ALL</MenuItem>
-              <MenuItem value="FREE">FREE</MenuItem>
-              <MenuItem value="RENTED">RENTED</MenuItem>
+              <MenuItem value="">None</MenuItem>
+              <MenuItem value="available">Available</MenuItem>
+              <MenuItem value="unavailable">Unavailable</MenuItem>
             </Select>
           </FormControl>
+          <Button type="submit" variant="contained" color="primary">
+            Search
+          </Button>
         </form>
-      </Box>
 
-      <Box
-        sx={{
-          position: "relative",
-          width: "100%",
-          maxHeight: "250px",
-          minHeight: "250px",
-          overflow: "auto",
-          "&::-webkit-scrollbar": {
-            width: "6px",
-          },
-          "&::-webkit-scrollbar-track": {
-            backgroundColor: "transparent",
-          },
-          "&::-webkit-scrollbar-thumb": {
-            backgroundColor: "rgba(0, 0, 0, 0.3)",
-            borderRadius: "10px",
-          },
-          "&::-webkit-scrollbar-thumb:hover": {
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-          },
-        }}
-      >
         {isLoading ? (
           <Box
             sx={{
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              height: "100%",
+              height: "100%", // Ensure full height if needed
             }}
           >
             <CircularProgress />
           </Box>
         ) : isError ? (
           <Typography sx={{ color: "red", textAlign: "center" }}>
-            Error loading books. Please try again later.
+            Error loading books: {error.message}
           </Typography>
-        ) : data?.length === 0 ? (
+        ) : bookData?.length === 0 ? (
           <Typography sx={{ textAlign: "center" }}>No books found.</Typography>
         ) : (
-          <TableContainer
-            component={Paper}
+          <Box
             sx={{
-              maxHeight: "100%",
-              backgroundColor: "transparent",
-              boxShadow: "none",
+              maxHeight: "200px", // Allow the table to take up available space
+              overflow: "auto", // Ensure content can scroll if it overflows
             }}
           >
-            <Table sx={{ backgroundColor: "transparent" }}>
-              <TableHead sx={{ position: "sticky", top: 0, zIndex: 1 }}>
-                <TableRow>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Book ID
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Book Name
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Book Author
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Status
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Count
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Price
-                  </TableCell>
-                  <TableCell sx={{ padding: "8px", fontWeight: "bold" }}>
-                    Action
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {data.map((book: any) => (
-                  <TableRow key={book.id}>
-                    <TableCell sx={{ padding: "8px" }}>{book.id}</TableCell>
-                    <TableCell sx={{ padding: "8px" }}>{book.name}</TableCell>
-                    <TableCell sx={{ padding: "8px" }}>{book.author}</TableCell>
-                    <TableCell sx={{ padding: "8px" }}>{book.status}</TableCell>
-                    <TableCell sx={{ padding: "8px" }}>{book.count}</TableCell>
-                    <TableCell sx={{ padding: "8px" }}>{book.price}</TableCell>
-                    <TableCell sx={{ padding: "8px" }}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleEditClick(book.id)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        onClick={() => deleteBook(book.id)}
-                        disabled={deletingBook}
-                        sx={{ marginLeft: 1 }}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+            <MaterialReactTable table={table} />
+          </Box>
         )}
       </Box>
 
       <Dialog open={isModalOpen} onClose={handleCloseModal}>
         <DialogTitle>Edit Book</DialogTitle>
         <DialogContent>
-          {fetchingBook ? (
-            <CircularProgress />
-          ) : fetchingError ? (
-            <Typography color="error">Error fetching book data.</Typography>
-          ) : (
-            <form onSubmit={handleSubmit}>
-              <TextField
-                label="Name"
-                name="name"
-                fullWidth
-                value={formValues.name}
+          <form onSubmit={handleSubmit}>
+            <TextField
+              label="Book Name"
+              variant="outlined"
+              fullWidth
+              name="name"
+              value={formValues.name}
+              onChange={handleChange}
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              label="Author"
+              variant="outlined"
+              fullWidth
+              name="author"
+              value={formValues.author}
+              onChange={handleChange}
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              label="Price"
+              variant="outlined"
+              fullWidth
+              name="price"
+              type="number"
+              value={formValues.price}
+              onChange={handleChange}
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              label="Count"
+              variant="outlined"
+              fullWidth
+              name="count"
+              type="number"
+              value={formValues.count}
+              onChange={handleChange}
+              sx={{ marginBottom: 2 }}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Category</InputLabel>
+              <Select
+                name="categoryName"
+                value={formValues.categoryName}
                 onChange={handleChange}
-                margin="normal"
-              />
-              <TextField
-                label="Author"
-                name="author"
-                fullWidth
-                value={formValues.author}
-                onChange={handleChange}
-                margin="normal"
-              />
-              <TextField
-                label="Price"
-                name="price"
-                fullWidth
-                value={formValues.price}
-                type="number"
-                onChange={handleChange}
-                margin="normal"
-              />
-              <TextField
-                label="Count"
-                name="count"
-                fullWidth
-                value={formValues.count}
-                type="number"
-                onChange={handleChange}
-                margin="normal"
-              />
-              <FormControl fullWidth margin="dense">
-                <InputLabel>Category</InputLabel>
-                <Select
-                  name="categoryName"
-                  value={formValues.categoryName}
-                  onChange={handleChange}
-                  label="Category"
-                >
-                  {categories.map((category) => (
-                    <MenuItem key={category} value={category}>
-                      {category}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <DialogActions>
-                <Button onClick={handleCloseModal}>Cancel</Button>
-                <Button type="submit" disabled={updatingBook}>
-                  {updatingBook ? <CircularProgress size={24} /> : "Update"}
-                </Button>
-              </DialogActions>
-            </form>
-          )}
+                label="Category"
+              >
+                {categories.map((category) => (
+                  <MenuItem key={category} value={category}>
+                    {category}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <DialogActions>
+              <Button
+                onClick={handleCloseModal}
+                color="primary"
+                variant="outlined"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                color="primary"
+                variant="contained"
+                disabled={updatingBook}
+              >
+                {updatingBook ? <CircularProgress size={24} /> : "Update"}
+              </Button>
+            </DialogActions>
+          </form>
         </DialogContent>
       </Dialog>
     </Box>
