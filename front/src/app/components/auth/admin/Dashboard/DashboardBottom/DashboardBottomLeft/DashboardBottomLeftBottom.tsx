@@ -1,9 +1,7 @@
 import { getBookCategoryCount } from "@/app/actions/getBookCategoryCount";
-import { useHasTyped } from "@/provider/HasTyped";
 import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 export default function DashboardBottomLeftBottom() {
