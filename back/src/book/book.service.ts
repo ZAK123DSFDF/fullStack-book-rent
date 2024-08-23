@@ -19,11 +19,15 @@ export class BookService {
         price: +bookData.price,
         count: +bookData.count,
       };
+
       const bookSchema = z.object({
         name: z.string().min(1, 'Name is required'),
         author: z.string().min(1, 'Author is required'),
         price: z.number().positive('Price must be a positive number'),
-        count: z.number().int().positive('Count must be a positive integer'),
+        count: z
+          .number()
+          .int()
+          .nonnegative('Count must be a non-negative integer'),
         category: z.string().min(1, 'Category is required'),
       });
 
@@ -35,13 +39,6 @@ export class BookService {
       }
 
       const { name, author, price, count, category } = parsed.data;
-      console.log(
-        typeof name,
-        typeof author,
-        typeof price,
-        typeof count,
-        typeof category,
-      );
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
       });
@@ -56,20 +53,24 @@ export class BookService {
         where: { name: category },
       });
       if (!existingCategory) {
-        throw new NotFoundException('category not found');
+        throw new NotFoundException('Category not found');
       }
+      const status = count === 0 ? 'RENTED' : 'FREE';
+
       const book = await this.prisma.book.create({
         data: {
           name,
           author,
           price,
           count,
+          status,
           category: {
             connect: { id: existingCategory.id },
           },
           owner: { connect: { id: userId } },
         },
       });
+
       await this.prisma.user.update({
         where: { id: userId },
         data: {
@@ -91,6 +92,11 @@ export class BookService {
     bookData: any,
   ): Promise<any> {
     try {
+      const parsedData = {
+        ...bookData,
+        price: +bookData.price,
+        count: +bookData.count,
+      };
       const bookSchema = z.object({
         name: z.string().optional(),
         author: z.string().optional(),
@@ -99,7 +105,7 @@ export class BookService {
         category: z.string().optional(),
       });
 
-      const parsed = bookSchema.safeParse(bookData);
+      const parsed = bookSchema.safeParse(parsedData);
       if (!parsed.success) {
         throw new BadRequestException(parsed.error.errors);
       }
@@ -116,6 +122,7 @@ export class BookService {
           'You are not authorized to update this book',
         );
       }
+
       let existingCategory = undefined;
       if (category) {
         existingCategory = await this.prisma.category.findUnique({
@@ -127,6 +134,9 @@ export class BookService {
         }
       }
 
+      const status =
+        count !== undefined ? (count === 0 ? 'RENTED' : 'FREE') : book.status;
+
       const updatedBook = await this.prisma.book.update({
         where: { id: bookId },
         data: {
@@ -134,6 +144,7 @@ export class BookService {
           author,
           price,
           count,
+          status,
           category: existingCategory
             ? {
                 connect: { id: existingCategory.id },
@@ -166,47 +177,100 @@ export class BookService {
       throw error;
     }
   }
-  async getAllBooks(
-    search?: string,
-    category?: string,
-    minPrice?: number,
-    maxPrice?: number,
-    status?: string,
-  ): Promise<any> {
+  async getAllBooks({
+    globalSearch,
+    bookId,
+    bookName,
+    bookAuthor,
+    count,
+    price,
+    bookStatus,
+    status,
+    sortBy,
+    sortOrder = 'asc',
+  }: {
+    globalSearch?: string;
+    bookId?: number;
+    bookName?: string;
+    bookAuthor?: string;
+    count?: number;
+    price?: number;
+    bookStatus?: 'VERIFIED' | 'NOTVERIFIED';
+    status?: 'FREE' | 'RENTED';
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<any> {
     try {
       const filter: any = {};
 
-      if (search) {
-        filter.name = { contains: search, mode: 'insensitive' };
-      }
+      if (globalSearch && globalSearch.trim() !== '') {
+        const numericSearch = Number(globalSearch);
+        filter.OR = [];
 
-      if (category) {
-        filter.category = { name: { contains: category, mode: 'insensitive' } };
-      }
-
-      if (minPrice !== undefined || maxPrice !== undefined) {
-        filter.price = {};
-
-        if (minPrice !== undefined) {
-          filter.price.gte = minPrice;
+        if (!isNaN(numericSearch)) {
+          filter.OR.push(
+            { id: numericSearch },
+            { count: numericSearch },
+            { price: numericSearch },
+          );
         }
-
-        if (maxPrice !== undefined) {
-          filter.price.lte = maxPrice;
-        }
+        filter.OR.push(
+          { name: { contains: globalSearch, mode: 'insensitive' } },
+          { author: { contains: globalSearch, mode: 'insensitive' } },
+        );
       }
 
-      if (status) {
+      if (bookId !== undefined) {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ id: bookId });
+      }
+      if (count !== undefined) {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ count: count });
+      }
+      if (price !== undefined) {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ price: price });
+      }
+      if (bookName && bookName.trim() !== '') {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ name: { contains: bookName, mode: 'insensitive' } });
+      }
+      if (bookAuthor && bookAuthor.trim() !== '') {
+        filter.OR = filter.OR || [];
+        filter.OR.push({
+          author: { contains: bookAuthor, mode: 'insensitive' },
+        });
+      }
+      const validBookStatus = ['VERIFIED', 'NOTVERIFIED'];
+      if (bookStatus && validBookStatus.includes(bookStatus)) {
+        filter.bookStatus = bookStatus;
+      }
+      const validStatus = ['FREE', 'RENTED'];
+      if (status && validStatus.includes(status)) {
         filter.status = status;
       }
+      const validSortFields = ['id', 'name', 'author', 'count', 'price'];
+      const actualSortBy = validSortFields.includes(sortBy) ? sortBy : 'id';
+      const validSortOrders: ('asc' | 'desc')[] = ['asc', 'desc'];
+      const actualSortOrder = validSortOrders.includes(sortOrder)
+        ? sortOrder
+        : 'asc';
+      const sortOptions: any = {
+        [actualSortBy]: actualSortOrder,
+      };
 
-      const allBooks = await this.prisma.book.findMany({ where: filter });
-      return allBooks;
+      let books = await this.prisma.book.findMany({
+        where: filter,
+        orderBy: sortOptions,
+      });
+      return books;
     } catch (error) {
-      console.log(error);
+      console.error(error);
       throw error;
     }
   }
+
   async rentBook(bookId: number, purchaseDate?: string): Promise<any> {
     try {
       const parsedDate = purchaseDate ? new Date(purchaseDate) : new Date();
@@ -220,6 +284,7 @@ export class BookService {
       if (!book) {
         throw new NotFoundException('Book not found');
       }
+
       const userId = book.owner.id;
       if (book.bookStatus !== 'VERIFIED') {
         throw new ForbiddenException('The book is not verified');
@@ -238,12 +303,17 @@ export class BookService {
           customDate: parsedDate,
         },
       });
+      const newCount = book.count - 1;
+      const status = newCount === 0 ? 'RENTED' : book.status;
+
       const updatedBook = await this.prisma.book.update({
         where: { id: bookId },
         data: {
-          count: book.count - 1,
+          count: newCount,
+          status,
         },
       });
+
       return { wallet, updatedBook };
     } catch (error) {
       console.log(error);
@@ -259,36 +329,98 @@ export class BookService {
       throw error;
     }
   }
-  async getUserBooks(
-    userId: any,
-    search?: string,
-    minPrice?: number,
-    maxPrice?: number,
-    status?: string,
-  ): Promise<any> {
+  async getUserBooks({
+    userId,
+    globalSearch,
+    bookId,
+    bookName,
+    bookAuthor,
+    count,
+    price,
+    bookStatus,
+    status,
+    sortBy,
+    sortOrder = 'asc',
+  }: {
+    userId: number;
+    globalSearch?: string;
+    bookId?: number;
+    bookName?: string;
+    bookAuthor?: string;
+    count?: number;
+    price?: number;
+    bookStatus?: 'VERIFIED' | 'NOTVERIFIED';
+    status?: 'FREE' | 'RENTED';
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<any> {
     try {
       const filter: any = { ownerId: userId };
 
-      if (search) {
-        filter.name = { contains: search, mode: 'insensitive' };
+      if (globalSearch && globalSearch.trim() !== '') {
+        const numericSearch = Number(globalSearch);
+        filter.OR = [];
+
+        if (!isNaN(numericSearch)) {
+          filter.OR.push(
+            { id: numericSearch },
+            { count: numericSearch },
+            { price: numericSearch },
+          );
+        }
+        filter.OR.push(
+          { name: { contains: globalSearch, mode: 'insensitive' } },
+          { author: { contains: globalSearch, mode: 'insensitive' } },
+        );
       }
-      if (minPrice !== undefined) {
-        filter.price = { gte: minPrice };
+
+      if (bookId !== undefined) {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ id: bookId });
       }
-      if (maxPrice !== undefined) {
-        filter.price = { ...filter.price, lte: maxPrice };
+      if (count !== undefined) {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ count: count });
       }
-      if (status) {
+      if (price !== undefined) {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ price: price });
+      }
+      if (bookName && bookName.trim() !== '') {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ name: { contains: bookName, mode: 'insensitive' } });
+      }
+      if (bookAuthor && bookAuthor.trim() !== '') {
+        filter.OR = filter.OR || [];
+        filter.OR.push({
+          author: { contains: bookAuthor, mode: 'insensitive' },
+        });
+      }
+      const validBookStatus = ['VERIFIED', 'NOTVERIFIED'];
+      if (bookStatus && validBookStatus.includes(bookStatus)) {
+        filter.bookStatus = bookStatus;
+      }
+      const validStatus = ['FREE', 'RENTED'];
+      if (status && validStatus.includes(status)) {
         filter.status = status;
       }
+      const validSortFields = ['id', 'name', 'author', 'count', 'price'];
+      const actualSortBy = validSortFields.includes(sortBy) ? sortBy : 'id';
+      const validSortOrders: ('asc' | 'desc')[] = ['asc', 'desc'];
+      const actualSortOrder = validSortOrders.includes(sortOrder)
+        ? sortOrder
+        : 'asc';
+      const sortOptions: any = {
+        [actualSortBy]: actualSortOrder,
+      };
 
-      const userBooks = await this.prisma.book.findMany({
+      let books = await this.prisma.book.findMany({
         where: filter,
+        orderBy: sortOptions,
       });
-
-      return userBooks;
+      return books;
     } catch (error) {
-      console.log(error);
+      console.error(error);
       throw error;
     }
   }

@@ -88,35 +88,42 @@ export class BookController {
       throw error;
     }
   }
-  @Get('AllBooks')
+  @Get('allBooks')
   @UseGuards(JwtAuthGuard, PoliciesGuard)
   @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, All))
   async getAllBooks(
     @Request() req,
     @Response() res,
-    @Query('search') search?: string,
-    @Query('category') category?: string,
-    @Query('minPrice') minPrice?: string,
-    @Query('maxPrice') maxPrice?: string,
-    @Query('status') status?: string,
+    @Query('globalSearch') globalSearch?: string,
+    @Query('bookId') bookId?: string,
+    @Query('bookName') bookName?: string,
+    @Query('bookAuthor') bookAuthor?: string,
+    @Query('count') count?: string,
+    @Query('price') price?: string,
+    @Query('bookStatus') bookStatus?: 'VERIFIED' | 'NOTVERIFIED',
+    @Query('status') status?: 'FREE' | 'RENTED',
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     try {
-      const min = minPrice ? parseInt(minPrice, 10) : undefined;
-      const max = maxPrice ? parseInt(maxPrice, 10) : undefined;
-      const validStatuses = ['FREE', 'RENTED'];
-      const normalizedStatus = status ? status.toUpperCase() : '';
-      const statusFilter = validStatuses.includes(normalizedStatus)
-        ? normalizedStatus
-        : '';
-      const allBooks = await this.bookService.getAllBooks(
-        search,
-        category,
-        min,
-        max,
-        statusFilter,
-      );
+      console.log('Fetching books with global and specific search');
+      const numericBookId = bookId ? Number(bookId) : undefined;
+      const numericCount = count ? Number(count) : undefined;
+      const numericPrice = price ? Number(price) : undefined;
+      const books = await this.bookService.getAllBooks({
+        globalSearch,
+        bookId: numericBookId,
+        bookName,
+        bookAuthor,
+        count: numericCount,
+        price: numericPrice,
+        bookStatus,
+        status,
+        sortBy,
+        sortOrder,
+      });
 
-      res.status(200).json(allBooks);
+      res.status(200).json(books);
     } catch (error) {
       console.log(error);
       throw error;
@@ -156,31 +163,41 @@ export class BookController {
   async getUserBooks(
     @Request() req,
     @Response() res,
-    @Query('search') search?: string,
-    @Query('minPrice') minPrice?: string,
-    @Query('maxPrice') maxPrice?: string,
-    @Query('status') status?: string,
+    @Query('globalSearch') globalSearch?: string,
+    @Query('bookId') bookId?: string,
+    @Query('bookName') bookName?: string,
+    @Query('bookAuthor') bookAuthor?: string,
+    @Query('count') count?: string,
+    @Query('price') price?: string,
+    @Query('bookStatus') bookStatus?: 'VERIFIED' | 'NOTVERIFIED',
+    @Query('status') status?: 'FREE' | 'RENTED',
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     try {
       const token = req.cookies['token'];
       const decoded = this.jwt.decode(token);
       const userId = decoded.user;
-      const min = minPrice ? parseInt(minPrice, 10) : undefined;
-      const max = maxPrice ? parseInt(maxPrice, 10) : undefined;
-      const validStatuses = ['FREE', 'RENTED'];
-      const normalizedStatus = status ? status.toUpperCase() : '';
-      const statusFilter = validStatuses.includes(normalizedStatus)
-        ? normalizedStatus
-        : '';
-      const getUserBooks = await this.bookService.getUserBooks(
-        userId,
-        search,
-        min,
-        max,
-        statusFilter,
-      );
 
-      res.status(200).json(getUserBooks);
+      const numericBookId = bookId ? Number(bookId) : undefined;
+      const numericCount = count ? Number(count) : undefined;
+      const numericPrice = price ? Number(price) : undefined;
+
+      const userBooks = await this.bookService.getUserBooks({
+        userId,
+        globalSearch,
+        bookId: numericBookId,
+        bookName,
+        bookAuthor,
+        count: numericCount,
+        price: numericPrice,
+        bookStatus,
+        status,
+        sortBy,
+        sortOrder,
+      });
+
+      res.status(200).json(userBooks);
     } catch (error) {
       console.log(error);
       throw error;

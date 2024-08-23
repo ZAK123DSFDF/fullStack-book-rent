@@ -1,41 +1,92 @@
+"use client";
 import { getAdminBook } from "@/app/actions/getAdminBook";
 import { getVerifyBook } from "@/app/actions/getVerifyBook";
 import {
   MaterialReactTable,
+  MRT_ColumnFiltersState,
+  MRT_SortingState,
   useMaterialReactTable,
-  type MRT_ColumnDef,
+  type MRT_ColumnDef, //if using TypeScript (optional, but recommended)
 } from "material-react-table";
-import {
-  Box,
-  Button,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function DashboardBottomRightTop() {
   const searchParams = useSearchParams();
-  const [name, setName] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [status, setStatus] = useState("");
+  const [bookData, setBookData] = useState([]);
+  const [del, setDel] = useState(false);
   const [hasTyped, setHasTyped] = useState(false);
-  const [bookData, setBookData] = useState<any[]>([]);
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [columnFilter, setColumnFilter] = useState<MRT_ColumnFiltersState>([]);
+  const [sorting, setSorting] = useState<MRT_SortingState>([]);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [check, setCheck] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCheck(true);
+    }, 3000);
 
-  const nameSearch = useDeferredValue(searchParams.get("search"));
-  const minPriceSearch = useDeferredValue(searchParams.get("minPrice"));
-  const maxPriceSearch = useDeferredValue(searchParams.get("maxPrice"));
-  const statusSearch = useDeferredValue(searchParams.get("status"));
+    // Cleanup the timeout if the component unmounts or re-renders before 1.5 seconds
+    return () => clearTimeout(timer);
+  }, [check]);
+  console.log("this is check", check);
+  useEffect(() => {
+    if (check) {
+      if (hasTyped) {
+        const handle = setTimeout(() => {
+          const query = new URLSearchParams();
 
+          // Add global search parameter
+          if (globalSearch) {
+            query.set("globalSearch", globalSearch);
+          } else {
+            query.delete("globalSearch");
+            setDel(true);
+            if (del) {
+              router.push(`/admin/dashboard?${query.toString()}`);
+            }
+          }
+
+          // Add column filters parameters
+          columnFilter.forEach((filter) => {
+            if (filter.value) {
+              query.set(filter.id, filter.value as string);
+            } else {
+              query.delete(filter.id);
+              setDel(true);
+              if (del) {
+                router.push(`/admin/dashboard?${query.toString()}`);
+              }
+            }
+          });
+
+          // Add sorting parameters
+          if (sorting.length > 0) {
+            const { id, desc } = sorting[0];
+            if (id) {
+              query.set("sortBy", id);
+              query.set("sortOrder", desc ? "desc" : "asc");
+            }
+          } else {
+            query.delete("sortBy");
+            query.delete("sortOrder");
+            setDel(true);
+            if (del) {
+              router.push(`/admin/dashboard?${query.toString()}`);
+            }
+          }
+          if (query.toString() !== "") {
+            router.push(`/admin/dashboard?${query.toString()}`);
+          }
+        }, 500);
+
+        return () => clearTimeout(handle);
+      }
+    }
+  }, [columnFilter, globalSearch, hasTyped, router, sorting, del, check]);
   // Define columns for the MaterialReactTable
   const columns = useMemo<MRT_ColumnDef<any>[]>(
     () => [
@@ -65,46 +116,76 @@ export default function DashboardBottomRightTop() {
         size: 150,
       },
       {
-        accessorKey: "status",
-        header: "Status",
+        accessorKey: "bookStatus",
+        header: "bookStatus",
         size: 150,
+        enableSorting: false,
         Cell: ({ row }) => (
           <Button
             onClick={() => handleVerify(row.original.id)}
             variant="contained"
             sx={{
               backgroundColor:
-                row.original.status === "VERIFIED" ? "green" : "blue",
+                row.original.bookStatus === "VERIFIED" ? "green" : "blue",
               color: "white",
               "&:hover": {
                 backgroundColor:
-                  row.original.status === "VERIFIED" ? "darkgreen" : "darkblue",
+                  row.original.bookStatus === "VERIFIED"
+                    ? "darkgreen"
+                    : "darkblue",
               },
             }}
           >
-            {row.original.status}
+            {row.original.bookStatus}
           </Button>
         ),
+      },
+      {
+        accessorKey: "status",
+        header: "status",
+        size: 150,
+        enableSorting: false,
+        Cell: ({ row }) => <Typography>{row.original.status}</Typography>,
       },
     ],
     []
   );
-
-  const { data, isLoading, isError, error } = useQuery({
+  const global = searchParams.get("globalSearch");
+  const id = searchParams.get("id");
+  const name = searchParams.get("name");
+  const author = searchParams.get("author");
+  const count = searchParams.get("count");
+  const price = searchParams.get("price");
+  const bookStatus = searchParams.get("bookStatus");
+  const status = searchParams.get("status");
+  const sortBy = searchParams.get("sortBy");
+  const sortOrder = searchParams.get("sortOrder");
+  const { data, isPending, isError, error } = useQuery({
     queryKey: [
-      "getAllBooks",
-      nameSearch,
-      minPriceSearch,
-      maxPriceSearch,
-      statusSearch,
+      "getAllBooksDashboard",
+      global,
+      id,
+      name,
+      author,
+      count,
+      price,
+      bookStatus,
+      status,
+      sortBy,
+      sortOrder,
     ],
     queryFn: () =>
       getAdminBook(
-        nameSearch as string,
-        //@ts-ignore
-        minPriceSearch,
-        maxPriceSearch,
-        statusSearch
+        global as string,
+        id as string,
+        name as string,
+        author as string,
+        count as string,
+        price as string,
+        bookStatus as string,
+        status as string,
+        sortBy as string,
+        sortOrder as string
       ),
   });
 
@@ -113,18 +194,11 @@ export default function DashboardBottomRightTop() {
       setBookData(data);
     }
   }, [data]);
-
   const { mutate } = useMutation({
     mutationFn: getVerifyBook,
     onSuccess: () => {
       //@ts-ignore
-      queryClient.invalidateQueries([
-        "getAllBooks",
-        nameSearch,
-        minPriceSearch,
-        maxPriceSearch,
-        statusSearch,
-      ]);
+      queryClient.invalidateQueries(["getAllBooksDashboard"]);
     },
   });
 
@@ -132,25 +206,33 @@ export default function DashboardBottomRightTop() {
     mutate(id);
   };
 
-  useEffect(() => {
-    if (hasTyped) {
-      const handle = setTimeout(() => {
-        const query = new URLSearchParams();
-        if (name) query.set("search", name);
-        if (minPrice) query.set("minPrice", minPrice);
-        if (maxPrice) query.set("maxPrice", maxPrice);
-        if (status) query.set("status", status);
-        router.push(`/admin/dashboard?${query.toString()}`);
-      }, 500);
-      return () => clearTimeout(handle);
-    }
-  }, [router, name, minPrice, maxPrice, status, hasTyped]);
-
   const table = useMaterialReactTable({
     columns,
     data: bookData || [],
+    manualFiltering: true,
+    manualSorting: true,
+    onColumnFiltersChange: (filters) => {
+      setHasTyped(true);
+      setColumnFilter(filters);
+    },
+    onGlobalFilterChange: (filters) => {
+      setHasTyped(true);
+      setGlobalSearch(filters);
+    },
+    onSortingChange: (sorting) => {
+      setHasTyped(true);
+      setSorting(sorting);
+    },
+    state: {
+      //@ts-ignore
+      columnFilter,
+      sorting,
+      globalSearch,
+      isPending,
+      showAlertBanner: isError,
+      showProgressBars: isPending,
+    },
   });
-
   return (
     <Box
       sx={{
@@ -161,106 +243,27 @@ export default function DashboardBottomRightTop() {
         borderRadius: "8px",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
         maxWidth: "900px",
-        maxHeight: "400px", // Maximum height for the container
+        maxHeight: "400px",
         display: "flex",
-        flexDirection: "column", // Stack children vertically
+        flexDirection: "column",
       }}
     >
       <Box
         sx={{
           marginBottom: 2,
-          maxHeight: "300px", // Maximum height for the filter section
+          maxHeight: "300px",
         }}
       >
         <Typography sx={{ fontWeight: "bold" }}>List of Books</Typography>
-        <form
-          style={{
-            marginTop: "50px",
-            display: "flex",
-            gap: "8px",
-            flexWrap: "wrap",
-          }}
-        >
-          <TextField
-            label="Name"
-            variant="outlined"
-            sx={{ marginRight: 2 }}
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setHasTyped(true);
-            }}
-          />
-          <TextField
-            label="Min Price"
-            variant="outlined"
-            sx={{ marginRight: 2 }}
-            value={minPrice}
-            type="number"
-            inputProps={{ min: 0, max: 100000, step: 1 }}
-            onChange={(e) => {
-              setMinPrice(e.target.value);
-              setHasTyped(true);
-            }}
-          />
-          <TextField
-            label="Max Price"
-            variant="outlined"
-            sx={{ marginRight: 2 }}
-            value={maxPrice}
-            type="number"
-            inputProps={{ min: 0, max: 100000, step: 1 }}
-            onChange={(e) => {
-              setMaxPrice(e.target.value);
-              setHasTyped(true);
-            }}
-          />
-          <FormControl sx={{ marginRight: 2, minWidth: 150 }}>
-            <InputLabel id="status-select-label">Status</InputLabel>
-            <Select
-              labelId="status-select-label"
-              id="status-select"
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
-                setHasTyped(true);
-              }}
-              label="Status"
-            >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="FREE">Free</MenuItem>
-              <MenuItem value="RENTED">Rented</MenuItem>
-            </Select>
-          </FormControl>
-        </form>
       </Box>
-      {isLoading ? (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100%", // Ensure full height if needed
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      ) : isError ? (
-        <Typography sx={{ color: "red", textAlign: "center" }}>
-          Error loading books: {error.message}
-        </Typography>
-      ) : bookData?.length === 0 ? (
-        <Typography sx={{ textAlign: "center" }}>No books found.</Typography>
-      ) : (
-        <Box
-          sx={{
-            flex: 1, // Allow the table to take up available space
-            overflow: "auto", // Ensure content can scroll if it overflows
-          }}
-        >
-          <MaterialReactTable table={table} />
-        </Box>
-      )}
+      <Box
+        sx={{
+          overflow: "auto", // Enable scrolling
+          maxHeight: "300px",
+        }}
+      >
+        <MaterialReactTable table={table} />
+      </Box>
     </Box>
   );
 }

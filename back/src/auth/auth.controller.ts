@@ -124,17 +124,36 @@ export class AuthController {
   async getUsers(
     @Request() req,
     @Response() res,
-    @Query('search') search?: string,
-    @Query('location') location?: string,
-    @Query('userStatus') userStatus?: string,
+    @Query('globalSearch') globalSearch?: string,
+    @Query('userId') userId?: string,
+    @Query('userName') userName?: string,
+    @Query('userLocation') userLocation?: string,
+    @Query('userEmail') userEmail?: string,
+    @Query('userPhoneNumber') userPhoneNumber?: string,
+    @Query('uploadNumber') uploadNumber?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('userStatus') userStatus?: 'VERIFIED' | 'NOTVERIFIED',
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     try {
-      console.log('this is user');
-      const users = await this.authService.getUsers(
-        search,
-        location,
+      console.log('Fetching users with global and specific search');
+      const numericUserId = userId ? Number(userId) : undefined;
+      const numericUploadNumber = uploadNumber
+        ? Number(uploadNumber)
+        : undefined;
+      const users = await this.authService.getUsers({
+        globalSearch,
+        userId: numericUserId,
+        userName,
+        userLocation,
+        userEmail,
+        userPhoneNumber,
+        uploadNumber: numericUploadNumber,
         userStatus,
-      );
+        sortBy,
+        sortOrder,
+      });
+
       res.status(200).json(users);
     } catch (error) {
       console.log(error);

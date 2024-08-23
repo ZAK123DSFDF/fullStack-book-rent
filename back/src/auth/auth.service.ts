@@ -104,34 +104,112 @@ export class AuthService {
       throw error;
     }
   }
-  async getUsers(
-    search?: string,
-    location?: string,
-    userStatus?: string,
-  ): Promise<any> {
+  async getUsers({
+    globalSearch,
+    userId,
+    userName,
+    userLocation,
+    userEmail,
+    userPhoneNumber,
+    uploadNumber,
+    userStatus,
+    sortBy,
+    sortOrder = 'asc',
+  }: {
+    globalSearch?: string;
+    userId?: number;
+    userName?: string;
+    userLocation?: string;
+    userEmail?: string;
+    userPhoneNumber?: string;
+    uploadNumber?: number;
+    userStatus?: 'VERIFIED' | 'NOTVERIFIED';
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<any> {
     try {
       const filter: any = {};
 
-      if (search) {
-        filter.OR = [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-        ];
+      if (globalSearch && globalSearch.trim() !== '') {
+        const numericSearch = Number(globalSearch);
+        filter.OR = [];
+
+        if (!isNaN(numericSearch)) {
+          filter.OR.push(
+            { id: numericSearch },
+            { uploadNumber: numericSearch },
+          );
+        }
+        filter.OR.push(
+          { name: { contains: globalSearch, mode: 'insensitive' } },
+          { email: { contains: globalSearch, mode: 'insensitive' } },
+          { location: { contains: globalSearch, mode: 'insensitive' } },
+          { phoneNumber: { contains: globalSearch, mode: 'insensitive' } },
+        );
       }
-      if (location) {
-        filter.location = { contains: location, mode: 'insensitive' };
+
+      if (userId !== undefined) {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ id: userId });
       }
-      if (userStatus) {
+      if (uploadNumber !== undefined) {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ uploadNumber: uploadNumber });
+      }
+      if (userName && userName.trim() !== '') {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ name: { contains: userName, mode: 'insensitive' } });
+      }
+      if (userLocation && userLocation.trim() !== '') {
+        filter.OR = filter.OR || [];
+        filter.OR.push({
+          location: { contains: userLocation, mode: 'insensitive' },
+        });
+      }
+      if (userEmail && userEmail.trim() !== '') {
+        filter.OR = filter.OR || [];
+        filter.OR.push({ email: { contains: userEmail, mode: 'insensitive' } });
+      }
+      if (userPhoneNumber && userPhoneNumber.trim() !== '') {
+        filter.OR = filter.OR || [];
+        filter.OR.push({
+          phoneNumber: { contains: userPhoneNumber, mode: 'insensitive' },
+        });
+      }
+      const validStatus = ['VERIFIED', 'NOTVERIFIED'];
+      if (userStatus && validStatus.includes(userStatus)) {
         filter.userStatus = userStatus;
       }
       filter.role = { not: 'ADMIN' };
-      const users = await this.prisma.user.findMany({ where: filter });
+      const validSortFields = [
+        'id',
+        'name',
+        'email',
+        'location',
+        'phoneNumber',
+        'uploadNumber',
+      ];
+      const actualSortBy = validSortFields.includes(sortBy) ? sortBy : 'id';
+      const validSortOrders: ('asc' | 'desc')[] = ['asc', 'desc'];
+      const actualSortOrder = validSortOrders.includes(sortOrder)
+        ? sortOrder
+        : 'asc';
+      const sortOptions: any = {
+        [actualSortBy]: actualSortOrder,
+      };
+
+      const users = await this.prisma.user.findMany({
+        where: filter,
+        orderBy: sortOptions,
+      });
+
       return users;
     } catch (error) {
-      console.log(error);
+      console.error(error);
       throw error;
     }
   }
+
   async getSingleUser(userId: any) {
     try {
       const singleUser = this.prisma.user.findUnique({ where: { id: userId } });

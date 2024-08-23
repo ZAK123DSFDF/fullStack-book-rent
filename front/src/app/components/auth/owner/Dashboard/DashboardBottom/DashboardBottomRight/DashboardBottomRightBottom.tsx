@@ -47,7 +47,6 @@ export default function DashboardBottomRightBottom() {
     queryFn: () => getUserRangeBalance(date.startDate, date.endDate),
     enabled: !!date.startDate && !!date.endDate, // Ensure query only runs when dates are available
   });
-  console.log("this is the rangeData", rangeData);
   const handleClick = () => {
     setOpenDate((prev) => !prev);
   };
@@ -76,17 +75,9 @@ export default function DashboardBottomRightBottom() {
   // Transform the response data into chart-compatible format
   const transformData = (data: any) => {
     if (data) {
-      console.log("this is the data", data);
       // Extract balances
       const currentYearBalances = data.currentYearBalances || {};
       const lastYearBalances = data.lastYearBalances || {};
-
-      console.log(
-        "this is the data in the transform",
-        currentYearBalances,
-        lastYearBalances
-      );
-
       // Create data arrays for each year
       const currentYearData = xAxisData.map((item) => {
         const formattedName = item.name;

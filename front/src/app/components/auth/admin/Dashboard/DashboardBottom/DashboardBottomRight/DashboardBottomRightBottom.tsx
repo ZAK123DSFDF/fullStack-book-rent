@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
 import {
   Area,
@@ -22,21 +22,22 @@ import {
   eachYearOfInterval,
   startOfYear,
 } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRangeDate } from "@/app/actions/getRangeDate";
 import { ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function DashboardBottomRightBottom() {
   const today = new Date();
   const startOfYearDate = startOfYear(today);
-
+  const router = useRouter();
   const [date, setDate] = useState({
     startDate: startOfYearDate,
     endDate: today,
     key: "selection",
   });
   const [openDate, setOpenDate] = useState(false);
-
+  const queryClient = useQueryClient();
   const handleChange = (ranges: any) => {
     const { startDate, endDate } = ranges.selection;
     setDate({ startDate, endDate, key: "selection" });
@@ -45,13 +46,10 @@ export default function DashboardBottomRightBottom() {
   const { data: rangeData } = useQuery({
     queryKey: ["userRangeBalance", date.startDate, date.endDate],
     queryFn: () => getRangeDate(date.startDate, date.endDate),
-    enabled: !!date.startDate && !!date.endDate, // Ensure query only runs when dates are available
   });
-  console.log("this is the rangeData", rangeData);
   const handleClick = () => {
     setOpenDate((prev) => !prev);
   };
-
   const rangeInMonths = useMemo(() => {
     return differenceInMonths(date.endDate, date.startDate);
   }, [date.startDate, date.endDate]);
@@ -66,38 +64,23 @@ export default function DashboardBottomRightBottom() {
       }));
     } else {
       return eachMonthOfInterval({ start, end }).map((month) => ({
-        name: format(month, "yyyy-MM"), // Format as "yyyy-MM" for monthly data
+        name: format(month, "yyyy-MM"),
       }));
     }
   };
 
   const xAxisData = generateXAxisData();
-
-  // Transform the response data into chart-compatible format
   const transformData = (data: any) => {
     if (data) {
-      console.log("this is the data", data);
-      // Extract balances
       const currentYearBalances = data.currentYearBalances || {};
       const lastYearBalances = data.lastYearBalances || {};
-
-      console.log(
-        "this is the data in the transform",
-        currentYearBalances,
-        lastYearBalances
-      );
-
-      // Create data arrays for each year
       const currentYearData = xAxisData.map((item) => {
         const formattedName = item.name;
-
-        // Convert formattedName to Date object for manipulation
         const currentDate = new Date(`${formattedName}-01`);
         const lastYearDate = new Date(
           currentDate.setFullYear(currentDate.getFullYear() - 1)
         );
         const lastYearFormattedName = format(lastYearDate, "yyyy-MM");
-
         return {
           name: formattedName,
           currentYearValue: currentYearBalances[formattedName] || 0,
@@ -107,7 +90,6 @@ export default function DashboardBottomRightBottom() {
 
       return currentYearData;
     } else {
-      // Handle case when data is null or undefined
       console.warn("No data provided for transformData");
       return xAxisData.map((item) => ({
         name: item.name,

@@ -1,17 +1,29 @@
 "use server";
 import { cookies } from "next/headers";
 export const getAdminBook = async (
-  name: string,
-  minPrice: number,
-  maxPrice: number,
-  status: string
+  globalSearch: string,
+  bookId: string,
+  bookName: string,
+  bookAuthor: string,
+  count: string,
+  price: string,
+  bookStatus: string,
+  status: string,
+  sortBy: string,
+  sortOrder: string
 ) => {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/book/AllBooks?search=${
-      name ? name : ""
-    }&minPrice=${minPrice ? +minPrice : ""}&maxPrice=${
-      maxPrice ? +maxPrice : ""
-    }&status=${status ? status : ""}`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/book/AllBooks?globalSearch=${
+      globalSearch ? globalSearch : ""
+    }&bookId=${bookId ? +bookId : ""}&bookName=${
+      bookName ? bookName : ""
+    }&bookAuthor=${bookAuthor ? bookAuthor : ""}&count=${
+      count ? +count : ""
+    }&price=${price ? +price : ""}&bookStatus=${
+      bookStatus ? bookStatus : ""
+    }&status=${status ? status : ""}&sortBy=${sortBy ? sortBy : ""}&sortOrder=${
+      sortOrder ? sortOrder : ""
+    }`,
     {
       method: "GET",
       cache: "no-store",

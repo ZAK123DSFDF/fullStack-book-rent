@@ -5,17 +5,12 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 export default function DashboardBottomLeftBottom() {
   const COLORS = ["#ff7e5f", "#feb47b", "#85e3ff", "#C93C20", "#6C7156"];
-
   const { data, error, isLoading } = useQuery({
     queryKey: ["getUserCategories"],
     queryFn: () => getUserCategoryCount(),
   });
-
-  console.log("Fetched data:", data); // Log the data for debugging
-
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
-
   return (
     <Box
       sx={{

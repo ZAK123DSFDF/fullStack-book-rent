@@ -1,19 +1,18 @@
 import { getBookCategoryCount } from "@/app/actions/getBookCategoryCount";
+import { useHasTyped } from "@/provider/HasTyped";
 import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 export default function DashboardBottomLeftBottom() {
   const COLORS = ["#ff7e5f", "#feb47b", "#85e3ff", "#C93C20", "#6C7156"];
+  const router = useRouter();
   const { data, isPending, isError } = useQuery({
     queryKey: ["GetBookCategories"],
     queryFn: () => getBookCategoryCount(),
   });
-
-  // Log data for debugging
-  console.log("this is categories data", data);
-
-  // Check if data is not empty and properly formatted
   const formattedData = data && Array.isArray(data) ? data : [];
 
   return (

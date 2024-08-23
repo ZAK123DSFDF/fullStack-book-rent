@@ -1,12 +1,16 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box } from "@mui/material";
 import DashboardBottomRightTop from "./Dashboard/DashboardBottom/DashboardBottomRight/DashboardBottomRightTop";
 import DashboardBottomRightBottom from "./Dashboard/DashboardBottom/DashboardBottomRight/DashboardBottomRightBottom";
 import DashboardBottomLeftTop from "./Dashboard/DashboardBottom/DashboardBottomLeft/DashboardBottomLeftTop";
 import DashboardBottomLeftBottom from "./Dashboard/DashboardBottom/DashboardBottomLeft/DashboardBottomLeftBottom";
 import BreadCrumbs from "../../BreadCrumbs";
+import { usePathname, useRouter } from "next/navigation";
 export default function OwnerDashboard() {
+  const router = useRouter();
+  const pathName = usePathname();
+
   return (
     <Box
       sx={{
