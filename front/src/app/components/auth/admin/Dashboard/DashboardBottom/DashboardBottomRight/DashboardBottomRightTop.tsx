@@ -1,4 +1,3 @@
-"use client";
 import { getAdminBook } from "@/app/actions/getAdminBook";
 import { getVerifyBook } from "@/app/actions/getVerifyBook";
 import {

@@ -1,11 +1,9 @@
 import { getAdminBalance } from "@/app/actions/getAdminBalance";
-import { useHasTyped } from "@/provider/HasTyped";
 import { Box, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 export default function DashboardBottomLeftTop() {
   const { data, isPending, isError } = useQuery({

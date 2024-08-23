@@ -277,6 +277,8 @@ export default function DashboardBottomRightTop() {
         borderRadius: "8px",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
         maxWidth: "1300px",
+        overflow: "auto", // Enable scrollbars if content overflows
+        maxHeight: "700px", // Set a maximum height to trigger vertical scrolling
       }}
     >
       <Box sx={{ marginBottom: 2 }}>
