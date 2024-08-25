@@ -78,10 +78,24 @@ export default function DashboardBottomRightTop() {
       },
       {
         accessorKey: "status",
-        header: "status",
-        size: 150,
+        header: "Status",
+        size: 100,
         enableSorting: false,
-        Cell: ({ row }) => <Typography>{row.original.status}</Typography>,
+        Cell: ({ row }) => (
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor:
+                  row.original.status === "FREE" ? "blue" : "red",
+                marginRight: 1, // Add some spacing between the circle and text
+              }}
+            />
+            {row.original.status}
+          </Box>
+        ),
       },
     ],
     []
@@ -201,6 +215,11 @@ export default function DashboardBottomRightTop() {
       setHasTyped(true);
       setSorting(sorting);
     },
+    renderTopToolbarCustomActions: () => (
+      <Typography sx={{ fontWeight: "bold", fontSize: "15px" }}>
+        List Of Books
+      </Typography>
+    ),
     state: {
       //@ts-ignore
       columnFilter,
@@ -222,14 +241,35 @@ export default function DashboardBottomRightTop() {
         borderRadius: "8px",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
         maxWidth: "1300px",
-        overflow: "auto", // Enable scrollbars if content overflows
-        maxHeight: "700px", // Set a maximum height to trigger vertical scrolling
+        maxHeight: "620px",
       }}
     >
-      <Box sx={{ marginBottom: 2 }}>
-        <Typography sx={{ fontWeight: "bold" }}>List of Books</Typography>
+      <Box
+        sx={{
+          overflow: "auto",
+          maxHeight: "550px",
+          maxWidth: "100%",
+          "&::-webkit-scrollbar": {
+            width: "6px",
+            height: "6px",
+          },
+          "&::-webkit-scrollbar-track": {
+            backgroundColor: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            borderRadius: "10px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+          },
+          "&::-webkit-scrollbar-corner": {
+            backgroundColor: "transparent",
+          },
+        }}
+      >
+        <MaterialReactTable table={table} />
       </Box>
-      <MaterialReactTable table={table} />
     </Box>
   );
 }

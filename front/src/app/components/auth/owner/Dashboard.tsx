@@ -15,6 +15,8 @@ export default function OwnerDashboard() {
         flex: 1,
         flexDirection: "column",
         gap: 2,
+        overflow: "auto",
+        maxHeight: "700px",
       }}
     >
       <BreadCrumbs />
@@ -27,20 +29,24 @@ export default function OwnerDashboard() {
           borderRadius: "8px",
           height: "100%",
           gap: 2,
+          overflow: "auto",
         }}
       >
         <Box
           sx={{
+            flex: 3,
             backgroundColor: "white",
-            flex: 1,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "flex-start",
             borderRadius: "8px",
-            flexDirection: "column",
             minHeight: "100%",
-            padding: 3,
-            gap: 4,
+            flexDirection: "column",
+            gap: 2,
+            overflow: "auto",
+            maxHeight: "200px",
+            maxWidth: "250px",
+            minWidth: "200px",
             boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
           }}
         >
@@ -57,6 +63,8 @@ export default function OwnerDashboard() {
             minHeight: "100%",
             flexDirection: "column",
             gap: 2,
+            overflow: "auto", // Add overflow management
+            maxHeight: "200px",
           }}
         >
           <DashboardBottomRightTop />

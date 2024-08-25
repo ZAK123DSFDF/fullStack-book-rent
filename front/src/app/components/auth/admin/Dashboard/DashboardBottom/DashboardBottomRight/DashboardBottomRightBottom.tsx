@@ -105,7 +105,7 @@ export default function DashboardBottomRightBottom() {
         width: "100%",
         backgroundColor: "white",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-        flex: 1.5,
+        maxHeight: "300px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
@@ -172,8 +172,8 @@ export default function DashboardBottomRightBottom() {
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             <Box
               sx={{
-                width: 5,
-                height: 5,
+                minWidth: 5,
+                minHeight: 5,
                 borderRadius: "50%",
                 backgroundColor: "blue",
               }}
@@ -197,8 +197,8 @@ export default function DashboardBottomRightBottom() {
           >
             <Box
               sx={{
-                width: 5,
-                height: 5,
+                minWidth: 5,
+                minHeight: 5,
                 borderRadius: "50%",
                 backgroundColor: "#7f5b83",
               }}

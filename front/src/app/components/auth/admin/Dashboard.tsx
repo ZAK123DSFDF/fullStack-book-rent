@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Box } from "@mui/material";
 import DashboardBottomRightTop from "./Dashboard/DashboardBottom/DashboardBottomRight/DashboardBottomRightTop";
 import DashboardBottomRightBottom from "./Dashboard/DashboardBottom/DashboardBottomRight/DashboardBottomRightBottom";
@@ -7,6 +7,7 @@ import DashboardBottomLeftTop from "./Dashboard/DashboardBottom/DashboardBottomL
 import DashboardBottomLeftBottom from "./Dashboard/DashboardBottom/DashboardBottomLeft/DashboardBottomLeftBottom";
 import BreadCrumbs from "../../BreadCrumbs";
 import { usePathname, useRouter } from "next/navigation";
+
 export default function OwnerDashboard() {
   const router = useRouter();
   const pathName = usePathname();
@@ -19,6 +20,8 @@ export default function OwnerDashboard() {
         flex: 1,
         flexDirection: "column",
         gap: 2,
+        overflow: "auto",
+        maxHeight: "700px",
       }}
     >
       <BreadCrumbs />
@@ -31,20 +34,24 @@ export default function OwnerDashboard() {
           borderRadius: "8px",
           height: "100%",
           gap: 2,
+          overflow: "auto",
         }}
       >
         <Box
           sx={{
+            flex: 3,
             backgroundColor: "white",
-            flex: 1,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "flex-start",
             borderRadius: "8px",
-            flexDirection: "column",
             minHeight: "100%",
-            padding: 3,
-            gap: 4,
+            flexDirection: "column",
+            gap: 2,
+            overflow: "auto",
+            maxHeight: "200px",
+            maxWidth: "250px",
+            minWidth: "200px",
             boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
           }}
         >
@@ -61,6 +68,8 @@ export default function OwnerDashboard() {
             minHeight: "100%",
             flexDirection: "column",
             gap: 2,
+            overflow: "auto",
+            maxHeight: "200px",
           }}
         >
           <DashboardBottomRightTop />

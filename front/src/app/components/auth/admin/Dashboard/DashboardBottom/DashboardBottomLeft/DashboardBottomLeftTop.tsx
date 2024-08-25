@@ -22,7 +22,9 @@ export default function DashboardBottomLeftTop() {
           flexDirection: "column",
         }}
       >
-        <Typography sx={{ color: "#88888b", fontSize: "25px" }}>
+        <Typography
+          sx={{ color: "#88888b", fontSize: "20px", marginTop: "30px" }}
+        >
           This Month Statistics
         </Typography>
         <Typography sx={{ color: "#bababa" }}>{formattedDate}</Typography>
@@ -39,13 +41,14 @@ export default function DashboardBottomLeftTop() {
           sx={{
             minHeight: "150px",
             backgroundColor: "white",
-            width: "100%",
+            width: "230px",
             display: "flex",
             flexDirection: "column",
-            padding: 1,
+            padding: 2,
             gap: 1,
             boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
             borderRadius: "8px",
+            marginTop: "30px",
           }}
         >
           <Box
@@ -69,8 +72,18 @@ export default function DashboardBottomLeftTop() {
               this month
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", gap: 1, alignItems: "baseline" }}>
-            <Typography variant="h4" sx={{ fontWeight: "bold" }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              alignItems: "baseline",
+              flexWrap: "nowrap",
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}
+            >
               ETB {data?.currentMonthTotal}
             </Typography>
             <Box sx={{ display: "flex" }}>
@@ -84,7 +97,13 @@ export default function DashboardBottomLeftTop() {
               ) : (
                 <>
                   <ArrowDown strokeWidth={1.5} size={20} color="red" />
-                  <Typography sx={{ color: "red", marginLeft: "4px" }}>
+                  <Typography
+                    sx={{
+                      color: "red",
+                      marginLeft: "4px",
+                      fontSize: "0.8rem",
+                    }}
+                  >
                     {data?.percentageChange}%
                   </Typography>
                 </>
@@ -92,14 +111,19 @@ export default function DashboardBottomLeftTop() {
             </Box>
           </Box>
           <Box sx={{ display: "flex", flexDirection: "column" }}>
-            <Typography sx={{ color: "#8b8b97" }}>
+            <Typography
+              sx={{
+                color: "#8b8b97",
+                fontSize: "0.8rem",
+              }}
+            >
               compared to ETB{data?.dollarChange} last month
             </Typography>
-            <Box sx={{ display: "flex", gap: 3 }}>
-              <Typography sx={{ color: "#7d7d80" }}>
+            <Box sx={{ display: "flex", gap: 2 }}>
+              <Typography sx={{ color: "#7d7d80", fontSize: "0.8rem" }}>
                 Last month income
               </Typography>
-              <Typography sx={{ color: "#7d7d80" }}>
+              <Typography sx={{ color: "#7d7d80", fontSize: "0.8rem" }}>
                 ETB {data?.lastMonthTotal}
               </Typography>
             </Box>

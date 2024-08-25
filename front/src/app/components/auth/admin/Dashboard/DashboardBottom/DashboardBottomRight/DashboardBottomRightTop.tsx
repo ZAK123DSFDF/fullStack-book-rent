@@ -141,10 +141,24 @@ export default function DashboardBottomRightTop() {
       },
       {
         accessorKey: "status",
-        header: "status",
-        size: 150,
+        header: "Status",
+        size: 100,
         enableSorting: false,
-        Cell: ({ row }) => <Typography>{row.original.status}</Typography>,
+        Cell: ({ row }) => (
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor:
+                  row.original.status === "FREE" ? "blue" : "red",
+                marginRight: 1, // Add some spacing between the circle and text
+              }}
+            />
+            {row.original.status}
+          </Box>
+        ),
       },
     ],
     []
@@ -210,6 +224,11 @@ export default function DashboardBottomRightTop() {
     data: bookData || [],
     manualFiltering: true,
     manualSorting: true,
+    renderTopToolbarCustomActions: () => (
+      <Typography sx={{ fontWeight: "bold", fontSize: "15px" }}>
+        Live Book Status
+      </Typography>
+    ),
     onColumnFiltersChange: (filters) => {
       setHasTyped(true);
       setColumnFilter(filters);
@@ -237,28 +256,36 @@ export default function DashboardBottomRightTop() {
       sx={{
         width: "100%",
         backgroundColor: "white",
-        flex: 2,
+        maxHeight: "800px",
         padding: 2,
         borderRadius: "8px",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-        maxWidth: "900px",
-        maxHeight: "400px",
         display: "flex",
         flexDirection: "column",
       }}
     >
       <Box
         sx={{
-          marginBottom: 2,
+          overflow: "auto",
           maxHeight: "300px",
-        }}
-      >
-        <Typography sx={{ fontWeight: "bold" }}>List of Books</Typography>
-      </Box>
-      <Box
-        sx={{
-          overflow: "auto", // Enable scrolling
-          maxHeight: "300px",
+          maxWidth: "100%",
+          "&::-webkit-scrollbar": {
+            width: "6px",
+            height: "6px",
+          },
+          "&::-webkit-scrollbar-track": {
+            backgroundColor: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            borderRadius: "10px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+          },
+          "&::-webkit-scrollbar-corner": {
+            backgroundColor: "transparent",
+          },
         }}
       >
         <MaterialReactTable table={table} />

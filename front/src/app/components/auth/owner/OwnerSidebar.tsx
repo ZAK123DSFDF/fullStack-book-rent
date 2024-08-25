@@ -40,7 +40,7 @@ export default function OwnerSidebar() {
       sx={{
         backgroundColor: "#171b36",
         minHeight: "100%",
-        width: "200px",
+        minWidth: "200px",
         borderRadius: "8px",
         padding: 2,
         display: "flex",

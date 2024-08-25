@@ -9,12 +9,10 @@ export default function DashboardBottomLeftBottom() {
     queryKey: ["getUserCategories"],
     queryFn: () => getUserCategoryCount(),
   });
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
   return (
     <Box
       sx={{
-        height: "300px",
+        height: "280px",
         backgroundColor: "white",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
         borderRadius: "8px",
@@ -22,14 +20,14 @@ export default function DashboardBottomLeftBottom() {
     >
       <Box
         sx={{
-          width: "100%",
+          width: "230px",
           display: "flex",
           justifyContent: "space-between",
           paddingX: 2,
           paddingY: 2,
         }}
       >
-        <Typography variant="h6">Available Books</Typography>
+        <Typography sx={{ fontSize: "15px" }}>Available Books</Typography>
         <Box
           sx={{
             display: "flex",
@@ -41,6 +39,7 @@ export default function DashboardBottomLeftBottom() {
               backgroundColor: "#f8f7f1",
               padding: "4px 8px",
               borderRadius: "4px",
+              fontSize: "10px",
             }}
           >
             Today

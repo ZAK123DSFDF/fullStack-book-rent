@@ -67,21 +67,20 @@ export default function DashboardBottomRightTop() {
       { accessorKey: "price", header: "Price", size: 100 },
       {
         accessorKey: "bookStatus",
-        header: "bookStatus",
+        header: "Book Status",
         size: 150,
         enableSorting: false,
         Cell: ({ row }) => (
           <Button
             variant="contained"
             sx={{
-              backgroundColor:
-                row.original.bookStatus === "VERIFIED" ? "green" : "blue",
+              backgroundColor: "gray",
               color: "white",
+              boxShadow: "none",
+              cursor: "default", // Remove pointer cursor
               "&:hover": {
-                backgroundColor:
-                  row.original.bookStatus === "VERIFIED"
-                    ? "darkgreen"
-                    : "darkblue",
+                backgroundColor: "gray",
+                boxShadow: "none",
               },
             }}
           >
@@ -94,8 +93,22 @@ export default function DashboardBottomRightTop() {
         header: "Status",
         size: 100,
         enableSorting: false,
+        Cell: ({ row }) => (
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor:
+                  row.original.status === "FREE" ? "blue" : "red",
+                marginRight: 1, // Add some spacing between the circle and text
+              }}
+            />
+            {row.original.status}
+          </Box>
+        ),
       },
-
       {
         accessorKey: "action",
         header: "Action",
@@ -316,6 +329,11 @@ export default function DashboardBottomRightTop() {
     data: bookData || [],
     manualFiltering: true,
     manualSorting: true,
+    renderTopToolbarCustomActions: () => (
+      <Typography sx={{ fontWeight: "bold", fontSize: "15px" }}>
+        Live Book Status
+      </Typography>
+    ),
     onColumnFiltersChange: (filters) => {
       setHasTyped(true);
       setColumnFilter(filters);
@@ -344,34 +362,40 @@ export default function DashboardBottomRightTop() {
       sx={{
         width: "100%",
         backgroundColor: "white",
-        flex: 2,
+        maxHeight: "800px",
         padding: 2,
         borderRadius: "8px",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-        maxWidth: "900px",
-        maxHeight: "400px", // Maximum height for the container
         display: "flex",
-        flexDirection: "column", // Stack children vertically
+        flexDirection: "column",
       }}
     >
       <Box
         sx={{
-          marginBottom: 2,
-          maxHeight: "300px", // Maximum height for the filter section
+          overflow: "auto",
+          maxHeight: "300px",
+          maxWidth: "100%",
+          "&::-webkit-scrollbar": {
+            width: "6px",
+            height: "6px",
+          },
+          "&::-webkit-scrollbar-track": {
+            backgroundColor: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            borderRadius: "10px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+          },
+          "&::-webkit-scrollbar-corner": {
+            backgroundColor: "transparent",
+          },
         }}
       >
-        <Typography sx={{ fontWeight: "bold" }}>Created Books</Typography>
-
-        <Box
-          sx={{
-            maxHeight: "300px", // Allow the table to take up available space
-            overflow: "auto", // Ensure content can scroll if it overflows
-          }}
-        >
-          <MaterialReactTable table={table} />
-        </Box>
+        <MaterialReactTable table={table} />
       </Box>
-
       <Dialog open={isModalOpen} onClose={handleCloseModal}>
         <DialogTitle>Edit Book</DialogTitle>
         <DialogContent>

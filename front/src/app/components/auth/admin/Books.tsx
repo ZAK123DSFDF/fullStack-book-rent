@@ -7,7 +7,6 @@ export default function OwnerDashboard() {
     <Box
       sx={{
         height: "100%",
-
         display: "flex",
         flex: 1,
         flexDirection: "column",
