@@ -11,8 +11,8 @@ import {
   YAxis,
 } from "recharts";
 import { DateRangePicker } from "react-date-range";
-import "react-date-range/dist/styles.css"; // Import the styles for the date picker
-import "react-date-range/dist/theme/default.css"; // Import the theme styles
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import {
   format,
   differenceInMonths,
@@ -25,6 +25,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { getUserRangeBalance } from "@/app/actions/getUserRangeBalance";
 import { ChevronDown } from "lucide-react";
+import { createPortal } from "react-dom";
 
 export default function DashboardBottomRightBottom() {
   const today = new Date();
@@ -45,7 +46,7 @@ export default function DashboardBottomRightBottom() {
   const { data: rangeData } = useQuery({
     queryKey: ["userRangeBalance", date.startDate, date.endDate],
     queryFn: () => getUserRangeBalance(date.startDate, date.endDate),
-    enabled: !!date.startDate && !!date.endDate, // Ensure query only runs when dates are available
+    enabled: !!date.startDate && !!date.endDate,
   });
   const handleClick = () => {
     setOpenDate((prev) => !prev);
@@ -61,28 +62,22 @@ export default function DashboardBottomRightBottom() {
 
     if (rangeInMonths > 12) {
       return eachYearOfInterval({ start, end }).map((year) => ({
-        name: format(year, "yyyy"), // Format as "yyyy" for yearly data
+        name: format(year, "yyyy"),
       }));
     } else {
       return eachMonthOfInterval({ start, end }).map((month) => ({
-        name: format(month, "yyyy-MM"), // Format as "yyyy-MM" for monthly data
+        name: format(month, "yyyy-MM"),
       }));
     }
   };
 
   const xAxisData = generateXAxisData();
-
-  // Transform the response data into chart-compatible format
   const transformData = (data: any) => {
     if (data) {
-      // Extract balances
       const currentYearBalances = data.currentYearBalances || {};
       const lastYearBalances = data.lastYearBalances || {};
-      // Create data arrays for each year
       const currentYearData = xAxisData.map((item) => {
         const formattedName = item.name;
-
-        // Convert formattedName to Date object for manipulation
         const currentDate = new Date(`${formattedName}-01`);
         const lastYearDate = new Date(
           currentDate.setFullYear(currentDate.getFullYear() - 1)
@@ -98,7 +93,6 @@ export default function DashboardBottomRightBottom() {
 
       return currentYearData;
     } else {
-      // Handle case when data is null or undefined
       console.warn("No data provided for transformData");
       return xAxisData.map((item) => ({
         name: item.name,
@@ -115,12 +109,12 @@ export default function DashboardBottomRightBottom() {
         width: "100%",
         backgroundColor: "white",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-        maxHeight: "300px",
+        maxHeight: "500px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
         alignItems: "flex-start",
-        paddingX: 3,
+        paddingX: 1,
         paddingBottom: 1,
         borderRadius: "8px",
       }}
@@ -160,14 +154,28 @@ export default function DashboardBottomRightBottom() {
                 "MMM dd, yyyy"
               )}`}
             </span>
-            {openDate && (
-              <DateRangePicker
-                className="dateRange"
-                ranges={[date]}
-                onChange={handleChange}
-                moveRangeOnFirstSelection={false}
-              />
-            )}
+            {openDate &&
+              createPortal(
+                <Box
+                  sx={{
+                    position: "absolute",
+                    background: "white",
+                    zIndex: 1000,
+                    borderRadius: "4px",
+                    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                    bottom: "245px",
+                    left: "500px",
+                    transform: "translateX(10px)",
+                  }}
+                >
+                  <DateRangePicker
+                    ranges={[date]}
+                    onChange={handleChange}
+                    moveRangeOnFirstSelection={false}
+                  />
+                </Box>,
+                document.body
+              )}
             <ChevronDown size={10} />
           </Box>
         </Box>
@@ -175,8 +183,8 @@ export default function DashboardBottomRightBottom() {
           sx={{
             display: "flex",
             justifyContent: "flex-end",
-            padding: "8px", // Ensure consistent padding around the content
-            boxSizing: "border-box", // Ensure padding and border are included in the element's width and height
+            padding: "8px",
+            boxSizing: "border-box",
           }}
         >
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>

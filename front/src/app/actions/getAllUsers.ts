@@ -9,6 +9,7 @@ export const getAllUsers = async (
   phoneNumber: string,
   uploadNumber: string,
   userStatus: string,
+  updateStatus: string,
   sortBy: string,
   sortOrder: string
 ) => {
@@ -21,7 +22,9 @@ export const getAllUsers = async (
       phoneNumber ? phoneNumber : ""
     }&uploadNumber=${uploadNumber ? +uploadNumber : ""}&userStatus=${
       userStatus ? userStatus : ""
-    }&sortBy=${sortBy ? sortBy : ""}&sortOrder=${sortOrder ? sortOrder : ""}`,
+    }&updateStatus=${updateStatus ? updateStatus : ""}&sortBy=${
+      sortBy ? sortBy : ""
+    }&sortOrder=${sortOrder ? sortOrder : ""}`,
     {
       method: "GET",
       cache: "no-store",

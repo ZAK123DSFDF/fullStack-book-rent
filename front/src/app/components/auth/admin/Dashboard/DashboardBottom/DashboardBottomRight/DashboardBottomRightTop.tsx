@@ -5,12 +5,15 @@ import {
   MRT_ColumnFiltersState,
   MRT_SortingState,
   useMaterialReactTable,
-  type MRT_ColumnDef, //if using TypeScript (optional, but recommended)
+  type MRT_ColumnDef,
 } from "material-react-table";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Switch, Typography } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { Check, X } from "lucide-react";
+import { getActivateBook } from "@/app/actions/getActivateBook";
+import { getDeactivateBook } from "@/app/actions/getDeactivateBook";
 
 export default function DashboardBottomRightTop() {
   const searchParams = useSearchParams();
@@ -23,12 +26,37 @@ export default function DashboardBottomRightTop() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [check, setCheck] = useState(false);
+  const { mutate: activateBook } = useMutation({
+    mutationFn: (id: any) => getActivateBook(id),
+    onSuccess: () => {
+      //@ts-ignore
+      queryClient.invalidateQueries(["getAllBooksDashboard"]);
+    },
+  });
+
+  // Mutation to deactivate the user
+  const { mutate: deactivateBook } = useMutation({
+    mutationFn: (id: any) => getDeactivateBook(id),
+    onSuccess: () => {
+      //@ts-ignore
+      queryClient.invalidateQueries(["getAllBooksDashboard"]);
+    },
+  });
+
+  // Handle the toggle status
+  const handleToggleStatus = (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
+    if (newStatus === "ACTIVE") {
+      activateBook({ id });
+    } else {
+      deactivateBook({ id });
+    }
+  };
   useEffect(() => {
     const timer = setTimeout(() => {
       setCheck(true);
     }, 3000);
-
-    // Cleanup the timeout if the component unmounts or re-renders before 1.5 seconds
     return () => clearTimeout(timer);
   }, [check]);
   console.log("this is check", check);
@@ -37,8 +65,6 @@ export default function DashboardBottomRightTop() {
       if (hasTyped) {
         const handle = setTimeout(() => {
           const query = new URLSearchParams();
-
-          // Add global search parameter
           if (globalSearch) {
             query.set("globalSearch", globalSearch);
           } else {
@@ -48,13 +74,13 @@ export default function DashboardBottomRightTop() {
               router.push(`/admin/dashboard?${query.toString()}`);
             }
           }
-
-          // Add column filters parameters
           columnFilter.forEach((filter) => {
             if (filter.value) {
-              query.set(filter.id, filter.value as string);
+              const key = filter.id.replace(".", "");
+              query.set(key, filter.value as string);
             } else {
-              query.delete(filter.id);
+              const key = filter.id.replace(".", "");
+              query.delete(key);
               setDel(true);
               if (del) {
                 router.push(`/admin/dashboard?${query.toString()}`);
@@ -66,7 +92,8 @@ export default function DashboardBottomRightTop() {
           if (sorting.length > 0) {
             const { id, desc } = sorting[0];
             if (id) {
-              query.set("sortBy", id);
+              const sortByKey = id.replace(".", "");
+              query.set("sortBy", sortByKey);
               query.set("sortOrder", desc ? "desc" : "asc");
             }
           } else {
@@ -95,6 +122,16 @@ export default function DashboardBottomRightTop() {
         size: 100,
       },
       {
+        accessorKey: "owner.name", // Accessor for nested owner.name
+        header: "Owner Name",
+        size: 200,
+      },
+      {
+        accessorKey: "category.name", // Accessor for nested category.name
+        header: "Category Name",
+        size: 200,
+      },
+      {
         accessorKey: "name",
         header: "Book Name",
         size: 200,
@@ -119,25 +156,46 @@ export default function DashboardBottomRightTop() {
         header: "bookStatus",
         size: 150,
         enableSorting: false,
-        Cell: ({ row }) => (
-          <Button
-            onClick={() => handleVerify(row.original.id)}
-            variant="contained"
-            sx={{
-              backgroundColor:
-                row.original.bookStatus === "VERIFIED" ? "green" : "blue",
-              color: "white",
-              "&:hover": {
-                backgroundColor:
-                  row.original.bookStatus === "VERIFIED"
-                    ? "darkgreen"
-                    : "darkblue",
-              },
-            }}
-          >
-            {row.original.bookStatus}
-          </Button>
-        ),
+        Cell: ({ row }) => {
+          const isActive = row.original.bookStatus === "ACTIVE";
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: isActive ? "#d4f3d4" : "#f3d4d4",
+                padding: "4px 8px",
+                borderRadius: "8px",
+                color: "white",
+              }}
+            >
+              {isActive ? <Check color="green" /> : <X color="red" />}
+              <Typography
+                sx={{
+                  marginRight: "8px",
+                  fontWeight: "bold",
+                  color: isActive ? "green" : "red",
+                }}
+              >
+                {isActive ? "Active" : "Inactive"}
+              </Typography>
+              <Switch
+                checked={isActive}
+                onChange={() =>
+                  handleToggleStatus(row.original.id, row.original.bookStatus)
+                }
+                sx={{
+                  "& .MuiSwitch-switchBase.Mui-checked": {
+                    color: isActive ? "darkgreen" : "red",
+                  },
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                    backgroundColor: isActive ? "darkgreen" : "red",
+                  },
+                }}
+              />
+            </Box>
+          );
+        },
       },
       {
         accessorKey: "status",
@@ -165,6 +223,8 @@ export default function DashboardBottomRightTop() {
   );
   const global = searchParams.get("globalSearch");
   const id = searchParams.get("id");
+  const ownerName = searchParams.get("ownername");
+  const category = searchParams.get("categoryname");
   const name = searchParams.get("name");
   const author = searchParams.get("author");
   const count = searchParams.get("count");
@@ -173,31 +233,41 @@ export default function DashboardBottomRightTop() {
   const status = searchParams.get("status");
   const sortBy = searchParams.get("sortBy");
   const sortOrder = searchParams.get("sortOrder");
+  let actualSortBy = sortBy;
+  if (sortBy === "ownername") {
+    actualSortBy = "ownerName";
+  } else if (sortBy === "categoryname") {
+    actualSortBy = "category";
+  }
   const { data, isPending, isError, error } = useQuery({
     queryKey: [
       "getAllBooksDashboard",
       global,
       id,
+      ownerName,
+      category,
       name,
       author,
       count,
       price,
       bookStatus,
       status,
-      sortBy,
+      actualSortBy,
       sortOrder,
     ],
     queryFn: () =>
       getAdminBook(
         global as string,
         id as string,
+        ownerName as string,
+        category as string,
         name as string,
         author as string,
         count as string,
         price as string,
         bookStatus as string,
         status as string,
-        sortBy as string,
+        actualSortBy as string,
         sortOrder as string
       ),
   });
@@ -214,18 +284,15 @@ export default function DashboardBottomRightTop() {
       queryClient.invalidateQueries(["getAllBooksDashboard"]);
     },
   });
-
-  const handleVerify = (id: any) => {
-    mutate(id);
-  };
-
   const table = useMaterialReactTable({
     columns,
     data: bookData || [],
     manualFiltering: true,
     manualSorting: true,
     renderTopToolbarCustomActions: () => (
-      <Typography sx={{ fontWeight: "bold", fontSize: "15px" }}>
+      <Typography
+        sx={{ fontWeight: "bold", fontSize: "15px", marginLeft: "5px" }}
+      >
         Live Book Status
       </Typography>
     ),
@@ -256,7 +323,10 @@ export default function DashboardBottomRightTop() {
       sx={{
         width: "100%",
         backgroundColor: "white",
-        maxHeight: "800px",
+        maxHeight: "290px",
+        "@media (min-width: 1536px)": {
+          maxHeight: "380px",
+        },
         padding: 2,
         borderRadius: "8px",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
@@ -267,7 +337,7 @@ export default function DashboardBottomRightTop() {
       <Box
         sx={{
           overflow: "auto",
-          maxHeight: "300px",
+          maxHeight: "500px",
           maxWidth: "100%",
           "&::-webkit-scrollbar": {
             width: "6px",

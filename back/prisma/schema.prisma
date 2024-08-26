@@ -20,8 +20,12 @@ enum userStatus{
   NOTVERIFIED
 }
 enum bookStatus{
-  VERIFIED
-  NOTVERIFIED
+   ACTIVE
+  INACTIVE
+}
+enum updateStatus{
+  ACTIVE
+  INACTIVE
 }
 model User{
  id   Int                   @id @default(autoincrement())
@@ -35,6 +39,7 @@ model User{
  wallet Wallet[]
  books Book[] 
  userStatus userStatus @default(NOTVERIFIED)
+ updateStatus updateStatus @default(INACTIVE)
 }
 model Book{
   id   Int                   @id @default(autoincrement())
@@ -43,7 +48,7 @@ model Book{
   status Status 
   owner User @relation(fields: [ownerId],references: [id],onDelete: Cascade)
   ownerId Int
-  bookStatus bookStatus @default(NOTVERIFIED)
+  bookStatus bookStatus @default(INACTIVE)
   price Int
   count Int
   category Category @relation(fields: [categoryId],references: [id],onDelete: Cascade)

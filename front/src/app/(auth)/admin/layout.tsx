@@ -13,6 +13,7 @@ export default function adminLayout({
         gap: 2,
         backgroundColor: "#f0f2ff",
         height: "100vh",
+        width: "100vw",
         padding: 2,
       }}
     >

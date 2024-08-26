@@ -19,13 +19,7 @@ export default function DashboardBottomLeftTop() {
           flexDirection: "column",
         }}
       >
-        <Typography
-          sx={{
-            color: "#88888b",
-            fontSize: "20px",
-            marginTop: "30px",
-          }}
-        >
+        <Typography sx={{ color: "#88888b", fontSize: "20px" }}>
           This Month Statistics
         </Typography>
         <Typography sx={{ color: "#bababa" }}>{formattedDate}</Typography>
@@ -49,7 +43,9 @@ export default function DashboardBottomLeftTop() {
             gap: 1,
             boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
             borderRadius: "8px",
-            marginTop: "30px",
+            "@media (min-width: 1536px)": {
+              marginTop: "30px",
+            },
           }}
         >
           <Box

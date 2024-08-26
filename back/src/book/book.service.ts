@@ -180,6 +180,8 @@ export class BookService {
   async getAllBooks({
     globalSearch,
     bookId,
+    ownerName,
+    category,
     bookName,
     bookAuthor,
     count,
@@ -191,11 +193,13 @@ export class BookService {
   }: {
     globalSearch?: string;
     bookId?: number;
+    ownerName?: string;
+    category?: string;
     bookName?: string;
     bookAuthor?: string;
     count?: number;
     price?: number;
-    bookStatus?: 'VERIFIED' | 'NOTVERIFIED';
+    bookStatus?: 'ACTIVE' | 'INACTIVE';
     status?: 'FREE' | 'RENTED';
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
@@ -217,32 +221,45 @@ export class BookService {
         filter.OR.push(
           { name: { contains: globalSearch, mode: 'insensitive' } },
           { author: { contains: globalSearch, mode: 'insensitive' } },
+          {
+            owner: {
+              name: { contains: globalSearch, mode: 'insensitive' },
+            },
+          },
+          {
+            category: {
+              name: { contains: globalSearch, mode: 'insensitive' },
+            },
+          },
         );
       }
 
       if (bookId !== undefined) {
-        filter.OR = filter.OR || [];
-        filter.OR.push({ id: bookId });
+        filter.id = bookId;
+      }
+      if (ownerName && ownerName.trim() !== '') {
+        filter.owner = {
+          name: { contains: ownerName, mode: 'insensitive' },
+        };
+      }
+      if (category && category.trim() !== '') {
+        filter.category = {
+          name: { contains: category, mode: 'insensitive' },
+        };
       }
       if (count !== undefined) {
-        filter.OR = filter.OR || [];
-        filter.OR.push({ count: count });
+        filter.count = count;
       }
       if (price !== undefined) {
-        filter.OR = filter.OR || [];
-        filter.OR.push({ price: price });
+        filter.price = price;
       }
       if (bookName && bookName.trim() !== '') {
-        filter.OR = filter.OR || [];
-        filter.OR.push({ name: { contains: bookName, mode: 'insensitive' } });
+        filter.name = { contains: bookName, mode: 'insensitive' };
       }
       if (bookAuthor && bookAuthor.trim() !== '') {
-        filter.OR = filter.OR || [];
-        filter.OR.push({
-          author: { contains: bookAuthor, mode: 'insensitive' },
-        });
+        filter.author = { contains: bookAuthor, mode: 'insensitive' };
       }
-      const validBookStatus = ['VERIFIED', 'NOTVERIFIED'];
+      const validBookStatus = ['ACTIVE', 'INACTIVE'];
       if (bookStatus && validBookStatus.includes(bookStatus)) {
         filter.bookStatus = bookStatus;
       }
@@ -250,27 +267,43 @@ export class BookService {
       if (status && validStatus.includes(status)) {
         filter.status = status;
       }
-      const validSortFields = ['id', 'name', 'author', 'count', 'price'];
-      const actualSortBy = validSortFields.includes(sortBy) ? sortBy : 'id';
       const validSortOrders: ('asc' | 'desc')[] = ['asc', 'desc'];
-      const actualSortOrder = validSortOrders.includes(sortOrder)
-        ? sortOrder
-        : 'asc';
-      const sortOptions: any = {
-        [actualSortBy]: actualSortOrder,
-      };
+      sortOrder = validSortOrders.includes(sortOrder) ? sortOrder : 'asc';
+      const validSortFields = [
+        'id',
+        'name',
+        'author',
+        'count',
+        'price',
+        'bookStatus',
+        'status',
+      ];
+      const sortOptions: any[] = [];
+      if (sortBy && validSortFields.includes(sortBy)) {
+        sortOptions.push({ [sortBy]: sortOrder });
+      } else if (sortBy === 'ownerName') {
+        sortOptions.push({ owner: { name: sortOrder } });
+      } else if (sortBy === 'category') {
+        sortOptions.push({ category: { name: sortOrder } });
+      } else {
+        sortOptions.push({ id: 'asc' });
+      }
 
-      let books = await this.prisma.book.findMany({
+      const books = await this.prisma.book.findMany({
         where: filter,
         orderBy: sortOptions,
+        include: {
+          owner: true,
+          category: true,
+        },
       });
+
       return books;
     } catch (error) {
       console.error(error);
       throw error;
     }
   }
-
   async rentBook(bookId: number, purchaseDate?: string): Promise<any> {
     try {
       const parsedDate = purchaseDate ? new Date(purchaseDate) : new Date();
@@ -281,31 +314,36 @@ export class BookService {
         where: { id: bookId },
         include: { owner: true },
       });
+
       if (!book) {
         throw new NotFoundException('Book not found');
       }
-
-      const userId = book.owner.id;
-      if (book.bookStatus !== 'VERIFIED') {
-        throw new ForbiddenException('The book is not verified');
+      if (book.bookStatus !== 'ACTIVE') {
+        throw new ForbiddenException('The book is not active');
+      }
+      if (
+        book.owner.userStatus !== 'VERIFIED' ||
+        book.owner.updateStatus !== 'ACTIVE'
+      ) {
+        throw new ForbiddenException('The owner of this book is not active');
       }
       if (book.count <= 0) {
         throw new BadRequestException('No copies available');
       }
+
       const bookPrice = book.price;
       if (isNaN(bookPrice)) {
         throw new BadRequestException('Invalid book price');
       }
       const wallet = await this.prisma.wallet.create({
         data: {
-          userId,
+          userId: book.owner.id,
           balance: bookPrice,
           customDate: parsedDate,
         },
       });
       const newCount = book.count - 1;
       const status = newCount === 0 ? 'RENTED' : book.status;
-
       const updatedBook = await this.prisma.book.update({
         where: { id: bookId },
         data: {
@@ -333,6 +371,7 @@ export class BookService {
     userId,
     globalSearch,
     bookId,
+    category,
     bookName,
     bookAuthor,
     count,
@@ -345,11 +384,12 @@ export class BookService {
     userId: number;
     globalSearch?: string;
     bookId?: number;
+    category?: string;
     bookName?: string;
     bookAuthor?: string;
     count?: number;
     price?: number;
-    bookStatus?: 'VERIFIED' | 'NOTVERIFIED';
+    bookStatus?: 'ACTIVE' | 'INACTIVE';
     status?: 'FREE' | 'RENTED';
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
@@ -371,12 +411,20 @@ export class BookService {
         filter.OR.push(
           { name: { contains: globalSearch, mode: 'insensitive' } },
           { author: { contains: globalSearch, mode: 'insensitive' } },
+          {
+            category: { name: { contains: globalSearch, mode: 'insensitive' } },
+          },
         );
       }
 
       if (bookId !== undefined) {
         filter.OR = filter.OR || [];
         filter.OR.push({ id: bookId });
+      }
+      if (category && category.trim() !== '') {
+        filter.category = {
+          name: { contains: category, mode: 'insensitive' },
+        };
       }
       if (count !== undefined) {
         filter.OR = filter.OR || [];
@@ -396,7 +444,7 @@ export class BookService {
           author: { contains: bookAuthor, mode: 'insensitive' },
         });
       }
-      const validBookStatus = ['VERIFIED', 'NOTVERIFIED'];
+      const validBookStatus = ['ACTIVE', 'INACTIVE'];
       if (bookStatus && validBookStatus.includes(bookStatus)) {
         filter.bookStatus = bookStatus;
       }
@@ -405,18 +453,23 @@ export class BookService {
         filter.status = status;
       }
       const validSortFields = ['id', 'name', 'author', 'count', 'price'];
-      const actualSortBy = validSortFields.includes(sortBy) ? sortBy : 'id';
       const validSortOrders: ('asc' | 'desc')[] = ['asc', 'desc'];
-      const actualSortOrder = validSortOrders.includes(sortOrder)
-        ? sortOrder
-        : 'asc';
-      const sortOptions: any = {
-        [actualSortBy]: actualSortOrder,
-      };
+      sortOrder = validSortOrders.includes(sortOrder) ? sortOrder : 'asc';
+      const sortOptions: any[] = [];
+      if (sortBy && validSortFields.includes(sortBy)) {
+        sortOptions.push({ [sortBy]: sortOrder });
+      } else if (sortBy === 'category') {
+        sortOptions.push({ category: { name: sortOrder } });
+      } else {
+        sortOptions.push({ id: 'asc' });
+      }
 
       let books = await this.prisma.book.findMany({
         where: filter,
         orderBy: sortOptions,
+        include: {
+          category: true,
+        },
       });
       return books;
     } catch (error) {
@@ -446,13 +499,10 @@ export class BookService {
   }
   async getUserCategoryCounts(userId: any): Promise<any[]> {
     try {
-      // Step 1: Fetch all categories
       const allCategories = await this.prisma.category.findMany();
       const allCategoryMap = new Map(
         allCategories.map((cat) => [cat.id, cat.name]),
       );
-
-      // Step 2: Fetch category counts for the user
       const categoryCounts = await this.prisma.book.groupBy({
         by: ['categoryId'],
         _count: {
@@ -462,13 +512,9 @@ export class BookService {
           ownerId: userId,
         },
       });
-
-      // Step 3: Create a map from category ID to count
       const categoryCountMap = new Map(
         categoryCounts.map((count) => [count.categoryId, count._count._all]),
       );
-
-      // Step 4: Combine results ensuring all categories are included
       const result = allCategories.map((cat) => ({
         name: cat.name,
         bookCount: categoryCountMap.get(cat.id) || 0,
@@ -480,13 +526,25 @@ export class BookService {
       throw error;
     }
   }
-  async verifyBook(bookId: any) {
+  async activateBook(bookId: any) {
     try {
       const verifyBook = this.prisma.book.update({
         where: { id: bookId },
-        data: { bookStatus: 'VERIFIED' },
+        data: { bookStatus: 'ACTIVE' },
       });
       return verifyBook;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async deactivateBook(bookId: any) {
+    try {
+      const unverifyBook = this.prisma.book.update({
+        where: { id: bookId },
+        data: { bookStatus: 'INACTIVE' },
+      });
+      return unverifyBook;
     } catch (error) {
       console.log(error);
       throw error;

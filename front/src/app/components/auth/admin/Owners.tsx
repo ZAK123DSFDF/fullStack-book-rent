@@ -13,6 +13,7 @@ export default function OwnerDashboard() {
         flex: 1,
         flexDirection: "column",
         gap: 2,
+        overflow: "hidden",
       }}
     >
       <BreadCrumbs />

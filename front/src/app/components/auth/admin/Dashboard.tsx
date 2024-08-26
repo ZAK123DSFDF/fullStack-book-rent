@@ -8,7 +8,7 @@ import DashboardBottomLeftBottom from "./Dashboard/DashboardBottom/DashboardBott
 import BreadCrumbs from "../../BreadCrumbs";
 import { usePathname, useRouter } from "next/navigation";
 
-export default function OwnerDashboard() {
+export default function AdminDashboard() {
   const router = useRouter();
   const pathName = usePathname();
 
@@ -20,8 +20,7 @@ export default function OwnerDashboard() {
         flex: 1,
         flexDirection: "column",
         gap: 2,
-        overflow: "auto",
-        maxHeight: "700px",
+        overflow: "hidden",
       }}
     >
       <BreadCrumbs />
@@ -34,24 +33,22 @@ export default function OwnerDashboard() {
           borderRadius: "8px",
           height: "100%",
           gap: 2,
-          overflow: "auto",
+          overflow: "hidden",
         }}
       >
         <Box
           sx={{
-            flex: 3,
-            backgroundColor: "white",
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-start",
             borderRadius: "8px",
-            minHeight: "100%",
+            height: "100%",
             flexDirection: "column",
             gap: 2,
-            overflow: "auto",
-            maxHeight: "200px",
+            padding: 2,
+            minWidth: "250px",
             maxWidth: "250px",
-            minWidth: "200px",
+            backgroundColor: "white",
             boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
           }}
         >
@@ -60,16 +57,15 @@ export default function OwnerDashboard() {
         </Box>
         <Box
           sx={{
-            flex: 3,
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "flex-start",
             borderRadius: "8px",
-            minHeight: "100%",
+            height: "100%",
             flexDirection: "column",
             gap: 2,
-            overflow: "auto",
-            maxHeight: "200px",
+            width: "100%",
+            overflow: "hidden",
           }}
         >
           <DashboardBottomRightTop />

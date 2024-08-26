@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 export const getOwnerBooks = async (
   globalSearch: string,
   bookId: string,
+  category: string,
   bookName: string,
   bookAuthor: string,
   count: string,
@@ -16,11 +17,11 @@ export const getOwnerBooks = async (
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/book/getUserBooks?globalSearch=${
       globalSearch ? globalSearch : ""
-    }&bookId=${bookId ? +bookId : ""}&bookName=${
-      bookName ? bookName : ""
-    }&bookAuthor=${bookAuthor ? bookAuthor : ""}&count=${
-      count ? +count : ""
-    }&price=${price ? +price : ""}&bookStatus=${
+    }&bookId=${bookId ? +bookId : ""}&category=${
+      category ? category : ""
+    }&bookName=${bookName ? bookName : ""}&bookAuthor=${
+      bookAuthor ? bookAuthor : ""
+    }&count=${count ? +count : ""}&price=${price ? +price : ""}&bookStatus=${
       bookStatus ? bookStatus : ""
     }&status=${status ? status : ""}&sortBy=${sortBy ? sortBy : ""}&sortOrder=${
       sortOrder ? sortOrder : ""

@@ -73,12 +73,3 @@ select {
 .invisible {
   visibility: hidden;
 }
-.dateRange {
-  position: absolute; /* Ensure it’s positioned relative to its parent */
-  background: white; /* Set a solid background color */
-  z-index: 1000; /* Ensure it’s above other content */
-  border-radius: 4px; /* Optional: Add rounded corners */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  bottom: 30px; /* Optional: Add shadow for better visibility */
-  transform: translateX(10px);
-}

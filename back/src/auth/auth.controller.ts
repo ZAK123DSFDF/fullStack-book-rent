@@ -22,6 +22,7 @@ import { CheckPolicies } from 'src/decorators/CheckPolicies';
 import { AppAbility } from 'src/casl/casl-ability.factory';
 import { Action } from 'src/utils/enum';
 import { Users } from 'src/classes/Users';
+import { updateStatus } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -95,6 +96,42 @@ export class AuthController {
       throw error;
     }
   }
+  @Patch('activateUser/:userId')
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Update, Users))
+  async activateUser(
+    @Param('userId') userId: number,
+    @Request() req,
+    @Response() res,
+  ) {
+    try {
+      console.log('activate reached');
+      const userIdInt = +userId;
+      const activateUser = await this.authService.activateUser(userIdInt);
+      res.status(200).json(activateUser);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  @Patch('deactivateUser/:userId')
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Update, Users))
+  async deactivateUser(
+    @Param('userId') userId: number,
+    @Request() req,
+    @Response() res,
+  ) {
+    try {
+      console.log('deactivate reached');
+      const userIdInt = +userId;
+      const deactivateUser = await this.authService.deactivateUser(userIdInt);
+      res.status(200).json(deactivateUser);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
   @Delete('deleteUser/:userId')
   @UseGuards(JwtAuthGuard, PoliciesGuard)
   @CheckPolicies((ability: AppAbility) => ability.can(Action.Update, Users))
@@ -132,6 +169,7 @@ export class AuthController {
     @Query('userPhoneNumber') userPhoneNumber?: string,
     @Query('uploadNumber') uploadNumber?: string,
     @Query('sortBy') sortBy?: string,
+    @Query('updateStatus') updateStatus?: 'ACTIVE' | 'INACTIVE',
     @Query('userStatus') userStatus?: 'VERIFIED' | 'NOTVERIFIED',
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
@@ -150,6 +188,7 @@ export class AuthController {
         userPhoneNumber,
         uploadNumber: numericUploadNumber,
         userStatus,
+        updateStatus,
         sortBy,
         sortOrder,
       });

@@ -49,6 +49,7 @@ export default function DashboardBottomRightTop() {
   const searchParams = useSearchParams();
   const global = searchParams.get("globalSearch");
   const id = searchParams.get("id");
+  const category = searchParams.get("categoryname");
   const name = searchParams.get("name");
   const author = searchParams.get("author");
   const count = searchParams.get("count");
@@ -57,10 +58,18 @@ export default function DashboardBottomRightTop() {
   const status = searchParams.get("status");
   const sortBy = searchParams.get("sortBy");
   const sortOrder = searchParams.get("sortOrder");
-  // Define columns for the MaterialReactTable
+  let actualSortBy = sortBy;
+  if (sortBy === "categoryname") {
+    actualSortBy = "category";
+  }
   const columns = useMemo<MRT_ColumnDef<any>[]>(
     () => [
       { accessorKey: "id", header: "Book ID", size: 100 },
+      {
+        accessorKey: "category.name",
+        header: "Category Name",
+        size: 200,
+      },
       { accessorKey: "name", header: "Book Name", size: 150 },
       { accessorKey: "author", header: "Book Author", size: 150 },
       { accessorKey: "count", header: "Count", size: 100 },
@@ -70,23 +79,27 @@ export default function DashboardBottomRightTop() {
         header: "Book Status",
         size: 150,
         enableSorting: false,
-        Cell: ({ row }) => (
-          <Button
-            variant="contained"
-            sx={{
-              backgroundColor: "gray",
-              color: "white",
-              boxShadow: "none",
-              cursor: "default", // Remove pointer cursor
-              "&:hover": {
-                backgroundColor: "gray",
+        Cell: ({ row }) => {
+          const bookStatus = row.original.bookStatus;
+          const isActive = bookStatus === "ACTIVE";
+
+          return (
+            <Button
+              sx={{
+                backgroundColor: isActive ? "green" : "red", // Set color based on status
+                color: "white",
                 boxShadow: "none",
-              },
-            }}
-          >
-            {row.original.bookStatus}
-          </Button>
-        ),
+                cursor: "default", // Remove pointer cursor
+                "&:hover": {
+                  backgroundColor: isActive ? "green" : "red", // Ensure hover color matches background
+                  boxShadow: "none",
+                },
+              }}
+            >
+              {bookStatus}
+            </Button>
+          );
+        },
       },
       {
         accessorKey: "status",
@@ -146,26 +159,28 @@ export default function DashboardBottomRightTop() {
       "books",
       global,
       id,
+      category,
       name,
       author,
       count,
       price,
       bookStatus,
       status,
-      sortBy,
+      actualSortBy,
       sortOrder,
     ],
     queryFn: () =>
       getOwnerBooks(
         global as string,
         id as string,
+        category as string,
         name as string,
         author as string,
         count as string,
         price as string,
         bookStatus as string,
         status as string,
-        sortBy as string,
+        actualSortBy as string,
         sortOrder as string
       ),
   });
@@ -274,8 +289,6 @@ export default function DashboardBottomRightTop() {
       if (hasTyped) {
         const handle = setTimeout(() => {
           const query = new URLSearchParams();
-
-          // Add global search parameter
           if (globalSearch) {
             query.set("globalSearch", globalSearch);
           } else {
@@ -289,9 +302,11 @@ export default function DashboardBottomRightTop() {
           // Add column filters parameters
           columnFilter.forEach((filter) => {
             if (filter.value) {
-              query.set(filter.id, filter.value as string);
+              const key = filter.id.replace(".", "");
+              query.set(key, filter.value as string);
             } else {
-              query.delete(filter.id);
+              const key = filter.id.replace(".", "");
+              query.delete(key);
               setDel(true);
               if (del) {
                 router.push(`/owner/dashboard?${query.toString()}`);
@@ -303,7 +318,8 @@ export default function DashboardBottomRightTop() {
           if (sorting.length > 0) {
             const { id, desc } = sorting[0];
             if (id) {
-              query.set("sortBy", id);
+              const sortByKey = id.replace(".", "");
+              query.set("sortBy", sortByKey);
               query.set("sortOrder", desc ? "desc" : "asc");
             }
           } else {
@@ -330,7 +346,9 @@ export default function DashboardBottomRightTop() {
     manualFiltering: true,
     manualSorting: true,
     renderTopToolbarCustomActions: () => (
-      <Typography sx={{ fontWeight: "bold", fontSize: "15px" }}>
+      <Typography
+        sx={{ fontWeight: "bold", fontSize: "15px", marginLeft: "5px" }}
+      >
         Live Book Status
       </Typography>
     ),
@@ -362,7 +380,10 @@ export default function DashboardBottomRightTop() {
       sx={{
         width: "100%",
         backgroundColor: "white",
-        maxHeight: "800px",
+        maxHeight: "290px",
+        "@media (min-width: 1536px)": {
+          maxHeight: "380px",
+        },
         padding: 2,
         borderRadius: "8px",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
@@ -373,7 +394,7 @@ export default function DashboardBottomRightTop() {
       <Box
         sx={{
           overflow: "auto",
-          maxHeight: "300px",
+          maxHeight: "500px",
           maxWidth: "100%",
           "&::-webkit-scrollbar": {
             width: "6px",

@@ -12,10 +12,11 @@ export default function DashboardBottomLeftBottom() {
   return (
     <Box
       sx={{
-        height: "280px",
+        height: "270px",
         backgroundColor: "white",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
         borderRadius: "8px",
+        overflow: "hidden",
       }}
     >
       <Box
@@ -75,11 +76,11 @@ export default function DashboardBottomLeftBottom() {
           justifyContent: "flex-start",
           alignItems: "flex-start",
           flexDirection: "column",
-          gap: 2,
+          gap: 1,
+          overflow: "auto",
           maxHeight: "70px",
-          overflowY: "auto",
-          overflowX: "hidden",
           paddingX: 2,
+          paddingBottom: 1,
           // Webkit scrollbar styles
           "&::-webkit-scrollbar": {
             width: "6px", // Thinner scrollbar width
@@ -110,12 +111,12 @@ export default function DashboardBottomLeftBottom() {
               <Box
                 sx={{
                   backgroundColor: COLORS[index % COLORS.length],
-                  width: 20,
-                  height: 20,
+                  width: 15,
+                  height: 15,
                   marginRight: 2, // Adjust spacing as needed
                 }}
               />
-              <Typography sx={{ margin: 0 }}>
+              <Typography sx={{ margin: 0, fontSize: "15px" }}>
                 {entry.name}: {entry.bookCount}{" "}
                 {/* Updated to match data key */}
               </Typography>

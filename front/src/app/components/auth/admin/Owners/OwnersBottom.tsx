@@ -15,12 +15,16 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  Switch,
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useDebounce } from "use-debounce";
+import { getDeactivateUser } from "@/app/actions/getDeactivateUser";
+import { getActivateUser } from "@/app/actions/getActivateUser";
+import { Check, CheckCircleIcon, X } from "lucide-react";
 export default function DashboardBottomRightTop() {
   const searchParams = useSearchParams();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -63,6 +67,52 @@ export default function DashboardBottomRightTop() {
         accessorKey: "uploadNumber",
         header: "Upload Number",
         size: 150,
+      },
+      {
+        accessorKey: "updateStatus",
+        header: "Update Status",
+        size: 150,
+        enableSorting: false,
+        Cell: ({ row }) => {
+          const isActive = row.original.updateStatus === "ACTIVE";
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: isActive ? "#d4f3d4" : "#f3d4d4", // light green and light red
+                padding: "4px 8px",
+                borderRadius: "8px",
+                color: "white",
+              }}
+            >
+              {isActive ? <Check color="green" /> : <X color="red" />}
+              <Typography
+                sx={{
+                  marginRight: "8px",
+                  fontWeight: "bold",
+                  color: isActive ? "green" : "red", // Text color based on status
+                }}
+              >
+                {isActive ? "Active" : "Inactive"}
+              </Typography>
+              <Switch
+                checked={isActive}
+                onChange={() =>
+                  handleToggleStatus(row.original.id, row.original.updateStatus)
+                }
+                sx={{
+                  "& .MuiSwitch-switchBase.Mui-checked": {
+                    color: isActive ? "darkgreen" : "red",
+                  },
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                    backgroundColor: isActive ? "darkgreen" : "red",
+                  },
+                }}
+              />
+            </Box>
+          );
+        },
       },
       {
         accessorKey: "userStatus",
@@ -117,7 +167,33 @@ export default function DashboardBottomRightTop() {
     ],
     []
   );
+  const { mutate: activateUser } = useMutation({
+    mutationFn: (id: any) => getActivateUser(id),
+    onSuccess: () => {
+      //@ts-ignore
+      queryClient.invalidateQueries(["getAllUsers"]);
+    },
+  });
 
+  // Mutation to deactivate the user
+  const { mutate: deactivateUser } = useMutation({
+    mutationFn: (id: any) => getDeactivateUser(id),
+    onSuccess: () => {
+      //@ts-ignore
+      queryClient.invalidateQueries(["getAllUsers"]);
+    },
+  });
+
+  // Handle the toggle status
+  const handleToggleStatus = (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
+    if (newStatus === "ACTIVE") {
+      activateUser({ id });
+    } else {
+      deactivateUser({ id });
+    }
+  };
   const handleClickOpen = (userId: any) => {
     setSelectedUser(userId);
     setIsDialogOpen(true);
@@ -135,6 +211,7 @@ export default function DashboardBottomRightTop() {
   const phoneNumber = searchParams.get("phoneNumber");
   const uploadNumber = searchParams.get("uploadNumber");
   const userStatus = searchParams.get("userStatus");
+  const updateStatus = searchParams.get("updateStatus");
   const sortBy = searchParams.get("sortBy");
   const sortOrder = searchParams.get("sortOrder");
   const { data, isPending, isError, error } = useQuery({
@@ -148,6 +225,7 @@ export default function DashboardBottomRightTop() {
       phoneNumber,
       uploadNumber,
       userStatus,
+      updateStatus,
       sortBy,
       sortOrder,
     ],
@@ -162,6 +240,7 @@ export default function DashboardBottomRightTop() {
         phoneNumber as string,
         uploadNumber as string,
         userStatus as string,
+        updateStatus as string,
         sortBy as string,
         sortOrder as string
       ),
@@ -245,6 +324,13 @@ export default function DashboardBottomRightTop() {
     data: userData || [],
     manualFiltering: true,
     manualSorting: true,
+    renderTopToolbarCustomActions: () => (
+      <Typography
+        sx={{ fontWeight: "bold", fontSize: "15px", marginLeft: "5px" }}
+      >
+        List Of Owners
+      </Typography>
+    ),
     onColumnFiltersChange: (filters) => {
       setHasTyped(true);
       setColumnFilter(filters);
@@ -272,22 +358,16 @@ export default function DashboardBottomRightTop() {
       sx={{
         width: "100%",
         backgroundColor: "white",
-        flex: 2,
+        height: "100%",
         padding: 2,
         borderRadius: "8px",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-        maxWidth: "1300px",
-        maxHeight: "620px",
       }}
     >
-      <Box sx={{ marginBottom: 2 }}>
-        <Typography sx={{ fontWeight: "bold" }}>List of Owners</Typography>
-      </Box>
       <Box>
         <Box
           sx={{
             overflow: "auto",
-            maxHeight: "550px",
             maxWidth: "100%",
             "&::-webkit-scrollbar": {
               width: "6px",

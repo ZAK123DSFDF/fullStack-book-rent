@@ -10,8 +10,8 @@ import {
   YAxis,
 } from "recharts";
 import { DateRangePicker } from "react-date-range";
-import "react-date-range/dist/styles.css"; // Import the styles for the date picker
-import "react-date-range/dist/theme/default.css"; // Import the theme styles
+import "react-date-range/dist/styles.css";
+import "react-date-range/dist/theme/default.css";
 import {
   format,
   differenceInMonths,
@@ -21,6 +21,7 @@ import {
   eachYearOfInterval,
   startOfYear,
 } from "date-fns";
+import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRangeDate } from "@/app/actions/getRangeDate";
 import { ChevronDown } from "lucide-react";
@@ -105,12 +106,12 @@ export default function DashboardBottomRightBottom() {
         width: "100%",
         backgroundColor: "white",
         boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-        maxHeight: "300px",
+        maxHeight: "500px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
         alignItems: "flex-start",
-        paddingX: 3,
+        paddingX: 1,
         paddingBottom: 1,
         borderRadius: "8px",
       }}
@@ -150,14 +151,28 @@ export default function DashboardBottomRightBottom() {
                 "MMM dd, yyyy"
               )}`}
             </span>
-            {openDate && (
-              <DateRangePicker
-                className="dateRange"
-                ranges={[date]}
-                onChange={handleChange}
-                moveRangeOnFirstSelection={false}
-              />
-            )}
+            {openDate &&
+              createPortal(
+                <Box
+                  sx={{
+                    position: "absolute",
+                    background: "white",
+                    zIndex: 1000,
+                    borderRadius: "4px",
+                    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                    bottom: "245px",
+                    left: "500px",
+                    transform: "translateX(10px)",
+                  }}
+                >
+                  <DateRangePicker
+                    ranges={[date]}
+                    onChange={handleChange}
+                    moveRangeOnFirstSelection={false}
+                  />
+                </Box>,
+                document.body
+              )}
             <ChevronDown size={10} />
           </Box>
         </Box>
@@ -165,8 +180,8 @@ export default function DashboardBottomRightBottom() {
           sx={{
             display: "flex",
             justifyContent: "flex-end",
-            padding: "8px", // Ensure consistent padding around the content
-            boxSizing: "border-box", // Ensure padding and border are included in the element's width and height
+            padding: "8px",
+            boxSizing: "border-box",
           }}
         >
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>

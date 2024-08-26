@@ -96,11 +96,13 @@ export class BookController {
     @Response() res,
     @Query('globalSearch') globalSearch?: string,
     @Query('bookId') bookId?: string,
+    @Query('ownerName') ownerName?: string,
+    @Query('category') category?: string,
     @Query('bookName') bookName?: string,
     @Query('bookAuthor') bookAuthor?: string,
     @Query('count') count?: string,
     @Query('price') price?: string,
-    @Query('bookStatus') bookStatus?: 'VERIFIED' | 'NOTVERIFIED',
+    @Query('bookStatus') bookStatus?: 'ACTIVE' | 'INACTIVE',
     @Query('status') status?: 'FREE' | 'RENTED',
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
@@ -113,6 +115,8 @@ export class BookController {
       const books = await this.bookService.getAllBooks({
         globalSearch,
         bookId: numericBookId,
+        ownerName,
+        category,
         bookName,
         bookAuthor,
         count: numericCount,
@@ -166,10 +170,11 @@ export class BookController {
     @Query('globalSearch') globalSearch?: string,
     @Query('bookId') bookId?: string,
     @Query('bookName') bookName?: string,
+    @Query('category') category?: string,
     @Query('bookAuthor') bookAuthor?: string,
     @Query('count') count?: string,
     @Query('price') price?: string,
-    @Query('bookStatus') bookStatus?: 'VERIFIED' | 'NOTVERIFIED',
+    @Query('bookStatus') bookStatus?: 'ACTIVE' | 'INACTIVE',
     @Query('status') status?: 'FREE' | 'RENTED',
     @Query('sortBy') sortBy?: string,
     @Query('sortOrder') sortOrder?: 'asc' | 'desc',
@@ -187,6 +192,7 @@ export class BookController {
         userId,
         globalSearch,
         bookId: numericBookId,
+        category,
         bookName,
         bookAuthor,
         count: numericCount,
@@ -231,7 +237,7 @@ export class BookController {
       throw error;
     }
   }
-  @Patch('verifyBook/:bookId')
+  @Patch('activateBook/:bookId')
   @UseGuards(JwtAuthGuard, PoliciesGuard)
   @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, All))
   async verifyBook(
@@ -241,7 +247,24 @@ export class BookController {
   ) {
     try {
       const bookIdInt = +bookId;
-      const verifyBook = await this.bookService.verifyBook(bookIdInt);
+      const verifyBook = await this.bookService.activateBook(bookIdInt);
+      res.status(200).json(verifyBook);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  @Patch('deactivateBook/:bookId')
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @CheckPolicies((ability: AppAbility) => ability.can(Action.Manage, All))
+  async unverifyBook(
+    @Request() req,
+    @Response() res,
+    @Param('bookId') bookId: any,
+  ) {
+    try {
+      const bookIdInt = +bookId;
+      const verifyBook = await this.bookService.deactivateBook(bookIdInt);
       res.status(200).json(verifyBook);
     } catch (error) {
       console.log(error);

@@ -92,6 +92,38 @@ export class AuthService {
       throw error;
     }
   }
+  async activateUser(userId: number) {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      const activateUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { updateStatus: 'ACTIVE' },
+      });
+      return activateUser;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+  async deactivateUser(userId: number) {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      const activateUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: { updateStatus: 'INACTIVE' },
+      });
+      return activateUser;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
   async deleteUser(userId: number) {
     try {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -113,6 +145,7 @@ export class AuthService {
     userPhoneNumber,
     uploadNumber,
     userStatus,
+    updateStatus,
     sortBy,
     sortOrder = 'asc',
   }: {
@@ -124,6 +157,7 @@ export class AuthService {
     userPhoneNumber?: string;
     uploadNumber?: number;
     userStatus?: 'VERIFIED' | 'NOTVERIFIED';
+    updateStatus?: 'ACTIVE' | 'INACTIVE';
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   }): Promise<any> {
@@ -179,6 +213,10 @@ export class AuthService {
       const validStatus = ['VERIFIED', 'NOTVERIFIED'];
       if (userStatus && validStatus.includes(userStatus)) {
         filter.userStatus = userStatus;
+      }
+      const validUpdateStatus = ['ACTIVE', 'INACTIVE'];
+      if (updateStatus && validUpdateStatus.includes(updateStatus)) {
+        filter.updateStatus = updateStatus;
       }
       filter.role = { not: 'ADMIN' };
       const validSortFields = [
