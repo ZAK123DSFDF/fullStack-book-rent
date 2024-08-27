@@ -135,7 +135,7 @@ export default function DashboardBottomRightTop() {
               },
             }}
           >
-            {row.original.userStatus}
+            {row.original.userStatus === "VERIFIED" ? "APPROVED" : "APPROVE"}
           </Button>
         ),
       },
@@ -214,6 +214,12 @@ export default function DashboardBottomRightTop() {
   const updateStatus = searchParams.get("updateStatus");
   const sortBy = searchParams.get("sortBy");
   const sortOrder = searchParams.get("sortOrder");
+  let actualUserStatus = userStatus;
+  if (userStatus === "APPROVE") {
+    actualUserStatus = "NOTVERIFIED";
+  } else if (userStatus === "APPROVED") {
+    actualUserStatus = "VERIFIED";
+  }
   const { data, isPending, isError, error } = useQuery({
     queryKey: [
       "getAllUsers",
@@ -224,7 +230,7 @@ export default function DashboardBottomRightTop() {
       email,
       phoneNumber,
       uploadNumber,
-      userStatus,
+      actualUserStatus,
       updateStatus,
       sortBy,
       sortOrder,
@@ -239,7 +245,7 @@ export default function DashboardBottomRightTop() {
         email as string,
         phoneNumber as string,
         uploadNumber as string,
-        userStatus as string,
+        actualUserStatus as string,
         updateStatus as string,
         sortBy as string,
         sortOrder as string
@@ -284,15 +290,11 @@ export default function DashboardBottomRightTop() {
     if (hasTyped) {
       const handle = setTimeout(() => {
         const query = new URLSearchParams();
-
-        // Add global search parameter
         if (globalSearch) {
           query.set("globalSearch", globalSearch);
         } else {
           query.delete("globalSearch");
         }
-
-        // Add column filters parameters
         columnFilter.forEach((filter) => {
           if (filter.value) {
             query.set(filter.id, filter.value as string);
@@ -300,8 +302,6 @@ export default function DashboardBottomRightTop() {
             query.delete(filter.id);
           }
         });
-
-        // Add sorting parameters
         if (sorting.length > 0) {
           const { id, desc } = sorting[0];
           if (id) {
