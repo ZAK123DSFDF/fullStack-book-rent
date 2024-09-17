@@ -4,43 +4,34 @@ import { Box, Button, TextField, Typography } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
-interface CustomError extends Error {
-  digest?: string;
-}
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const { mutate, isPending, isError, error } = useMutation({
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { mutate, isPending } = useMutation({
     mutationFn: getLogin,
     onSuccess: (data) => {
-      localStorage.setItem("userId", data.user.id);
-      window.location.href = "/owner/dashboard";
+      if (data.error) {
+        setErrorMessage(data.error.message || "An unexpected error occurred");
+      } else {
+        localStorage.setItem("userId", data.user.id);
+        window.location.href = "/owner/dashboard";
+      }
+    },
+    onError: (error) => {
+      setErrorMessage("An unexpected error occurred");
     },
   });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setErrorMessage(null);
     console.log("Email:", email, "Password:", password);
     mutate({ email, password });
     setEmail("");
     setPassword("");
   };
-  let errorMessage;
-  if (isError) {
-    const customError = error as CustomError; // Type assertion
-    if (process.env.NODE_ENV === "production") {
-      if (customError?.digest === "520664313") {
-        errorMessage = "credentials not correct";
-      } else if (customError?.digest === "1042981241") {
-        errorMessage = "user not found";
-      } else {
-        errorMessage = "internal server error";
-      }
-    } else {
-      errorMessage = customError.message;
-    }
-  }
+
   return (
     <Box
       sx={{
@@ -133,7 +124,11 @@ export default function Login() {
           <Button variant="contained" color="primary" type="submit" fullWidth>
             {isPending ? "Loading..." : "Login"}
           </Button>
-          {isError && <Typography color="error">{errorMessage}</Typography>}
+          {errorMessage && (
+            <Typography color="error" sx={{ mt: 2, textAlign: "center" }}>
+              {errorMessage}
+            </Typography>
+          )}
           <Typography sx={{ alignSelf: "center" }}>
             don&#39;t have an account?
             <Link style={{ color: "blue" }} href={"/signup"}>

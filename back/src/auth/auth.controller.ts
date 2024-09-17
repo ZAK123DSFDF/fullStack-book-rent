@@ -44,13 +44,27 @@ export class AuthController {
   @Post('login')
   async Login(@Response() res, @Body() userData: any) {
     try {
-      console.log(userData);
-      const { user, token } = await this.authService.validateUser(userData);
-      res.cookie('token', token, { httpOnly: true });
-      res.status(200).json({ user, token });
+      const result = await this.authService.validateUser(userData);
+
+      if (result.error) {
+        // If there's an error in the service response, return it with the appropriate status
+        return res.status(200).json({ error: result.error });
+      }
+
+      // If successful, set the cookie and return the user and token
+      res.cookie('token', result.token, { httpOnly: true });
+      return res.status(200).json({ user: result.user, token: result.token });
     } catch (error) {
       console.log(error);
-      throw error;
+      // Return a generic internal server error if something unexpected happens
+      return res
+        .status(200)
+        .json({
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'An internal server error occurred',
+          },
+        });
     }
   }
   @Get('logout')

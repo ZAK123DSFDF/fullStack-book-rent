@@ -56,15 +56,30 @@ export class AuthService {
     try {
       const { email, password } = userData;
       if (!email || !password) {
-        throw new BadRequestException('Email and password are required');
+        return {
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found',
+          },
+        };
       }
       const user = await this.prisma.user.findUnique({ where: { email } });
       if (!user) {
-        throw new NotFoundException('user not found');
+        return {
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found',
+          },
+        };
       }
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
-        throw new BadRequestException('credentials not correct');
+        return {
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: 'Credentials not correct',
+          },
+        };
       }
       const token = this.jwt.sign(
         { user: user.id, email: user.email, role: user.role },
@@ -73,7 +88,12 @@ export class AuthService {
       return { user, token };
     } catch (error) {
       console.log(error);
-      throw error;
+      return {
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An internal server error occurred',
+        },
+      };
     }
   }
   async verifyUser(userId: number) {
