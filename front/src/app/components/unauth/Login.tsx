@@ -4,7 +4,9 @@ import { Box, Button, TextField, Typography } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
-
+interface CustomError extends Error {
+  digest?: string;
+}
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +26,21 @@ export default function Login() {
     setEmail("");
     setPassword("");
   };
-
+  let errorMessage;
+  if (isError) {
+    const customError = error as CustomError; // Type assertion
+    if (process.env.NODE_ENV === "production") {
+      if (customError?.digest === "3636161722") {
+        errorMessage = "credentials not correct";
+      } else if (customError?.digest === "91673466") {
+        errorMessage = "user not found";
+      } else {
+        errorMessage = "internal server error";
+      }
+    } else {
+      errorMessage = customError.message;
+    }
+  }
   return (
     <Box
       sx={{
@@ -117,11 +133,7 @@ export default function Login() {
           <Button variant="contained" color="primary" type="submit" fullWidth>
             {isPending ? "Loading..." : "Login"}
           </Button>
-          {isError && (
-            <Typography color="error">
-              {error instanceof Error ? error.message : "An error occurred."}
-            </Typography>
-          )}
+          {isError && <Typography color="error">{errorMessage}</Typography>}
           <Typography sx={{ alignSelf: "center" }}>
             don&#39;t have an account?
             <Link style={{ color: "blue" }} href={"/signup"}>
