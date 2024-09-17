@@ -30,9 +30,9 @@ export default function Login() {
   if (isError) {
     const customError = error as CustomError; // Type assertion
     if (process.env.NODE_ENV === "production") {
-      if (customError?.digest === "3636161722") {
+      if (customError?.digest === "4082457531") {
         errorMessage = "credentials not correct";
-      } else if (customError?.digest === "91673466") {
+      } else if (customError?.digest === "1500773947") {
         errorMessage = "user not found";
       } else {
         errorMessage = "internal server error";
